@@ -1,0 +1,1485 @@
+2025-10-24 02:22:56,968 | INFO | ETL started.
+2025-10-24 02:22:56,968 | INFO | Starting paginated fetch from API: https://procurement-sku-analysis-mock.onrender.com/purchase-orders
+2025-10-24 02:23:00,061 | INFO | Starting paginated fetch from API: https://procurement-sku-analysis-mock.onrender.com/purchase-orders
+2025-10-24 02:23:02,609 | INFO | Starting paginated fetch from API: https://procurement-sku-analysis-mock.onrender.com/purchase-orders
+2025-10-24 02:23:07,169 | INFO | Starting paginated fetch from API: https://procurement-sku-analysis-mock.onrender.com/purchase-orders
+2025-10-24 02:23:15,704 | INFO | Starting paginated fetch from API: https://procurement-sku-analysis-mock.onrender.com/purchase-orders
+2025-10-24 02:23:16,401 | ERROR | ETL failed:
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\tenacity\__init__.py", line 480, in __call__
+    result = fn(*args, **kwargs)
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src\etl\etl_ingest.py", line 66, in fetch_paginated_data
+    response.raise_for_status()
+    ~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\requests\models.py", line 1026, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 422 Client Error: Unprocessable Entity for url: https://procurement-sku-analysis-mock.onrender.com/purchase-orders?limit=5000&offset=0
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src\etl\etl_ingest.py", line 175, in run_etl
+    raw_data = fetch_paginated_data(DATA_SOURCE_URL, CHUNK_SIZE)
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\tenacity\__init__.py", line 338, in wrapped_f
+    return copy(f, *args, **kw)
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\tenacity\__init__.py", line 477, in __call__
+    do = self.iter(retry_state=retry_state)
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\tenacity\__init__.py", line 378, in iter
+    result = action(retry_state)
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\tenacity\__init__.py", line 421, in exc_check
+    raise retry_exc from fut.exception()
+tenacity.RetryError: RetryError[<Future at 0x1bf3eccb230 state=finished raised HTTPError>]
+2025-10-24 02:43:42,792 | INFO | ETL started.
+2025-10-24 02:44:05,059 | INFO | Upserted 330 rows.
+2025-10-24 02:44:05,059 | INFO | Processed chunk offset=0, total so far=330
+2025-10-24 02:44:06,716 | INFO | Upserted 338 rows.
+2025-10-24 02:44:06,717 | INFO | Processed chunk offset=100, total so far=668
+2025-10-24 02:44:07,730 | INFO | Upserted 343 rows.
+2025-10-24 02:44:07,731 | INFO | Processed chunk offset=200, total so far=1011
+2025-10-24 02:44:08,796 | INFO | Upserted 331 rows.
+2025-10-24 02:44:08,797 | INFO | Processed chunk offset=300, total so far=1342
+2025-10-24 02:44:09,589 | INFO | Upserted 328 rows.
+2025-10-24 02:44:09,589 | INFO | Processed chunk offset=400, total so far=1670
+2025-10-24 02:44:10,446 | INFO | Upserted 318 rows.
+2025-10-24 02:44:10,447 | INFO | Processed chunk offset=500, total so far=1988
+2025-10-24 02:44:11,530 | INFO | Upserted 322 rows.
+2025-10-24 02:44:11,531 | INFO | Processed chunk offset=600, total so far=2310
+2025-10-24 02:44:12,394 | INFO | Upserted 332 rows.
+2025-10-24 02:44:12,395 | INFO | Processed chunk offset=700, total so far=2642
+2025-10-24 02:44:13,287 | INFO | Upserted 336 rows.
+2025-10-24 02:44:13,288 | INFO | Processed chunk offset=800, total so far=2978
+2025-10-24 02:44:14,328 | INFO | Upserted 337 rows.
+2025-10-24 02:44:14,329 | INFO | Processed chunk offset=900, total so far=3315
+2025-10-24 02:44:15,425 | INFO | Upserted 339 rows.
+2025-10-24 02:44:15,426 | INFO | Processed chunk offset=1000, total so far=3654
+2025-10-24 02:44:16,421 | INFO | Upserted 330 rows.
+2025-10-24 02:44:16,421 | INFO | Processed chunk offset=1100, total so far=3984
+2025-10-24 02:44:17,152 | INFO | Upserted 316 rows.
+2025-10-24 02:44:17,153 | INFO | Processed chunk offset=1200, total so far=4300
+2025-10-24 02:44:17,968 | INFO | Upserted 320 rows.
+2025-10-24 02:44:17,968 | INFO | Processed chunk offset=1300, total so far=4620
+2025-10-24 02:44:18,757 | INFO | Upserted 317 rows.
+2025-10-24 02:44:18,758 | INFO | Processed chunk offset=1400, total so far=4937
+2025-10-24 02:44:19,481 | INFO | Upserted 325 rows.
+2025-10-24 02:44:19,482 | INFO | Processed chunk offset=1500, total so far=5262
+2025-10-24 02:44:20,370 | INFO | Upserted 320 rows.
+2025-10-24 02:44:20,370 | INFO | Processed chunk offset=1600, total so far=5582
+2025-10-24 02:44:21,171 | INFO | Upserted 325 rows.
+2025-10-24 02:44:21,172 | INFO | Processed chunk offset=1700, total so far=5907
+2025-10-24 02:44:22,221 | INFO | Upserted 324 rows.
+2025-10-24 02:44:22,221 | INFO | Processed chunk offset=1800, total so far=6231
+2025-10-24 02:44:23,049 | INFO | Upserted 325 rows.
+2025-10-24 02:44:23,050 | INFO | Processed chunk offset=1900, total so far=6556
+2025-10-24 02:44:24,107 | INFO | Upserted 320 rows.
+2025-10-24 02:44:24,108 | INFO | Processed chunk offset=2000, total so far=6876
+2025-10-24 02:44:24,956 | INFO | Upserted 327 rows.
+2025-10-24 02:44:24,957 | INFO | Processed chunk offset=2100, total so far=7203
+2025-10-24 02:44:25,863 | INFO | Upserted 338 rows.
+2025-10-24 02:44:25,864 | INFO | Processed chunk offset=2200, total so far=7541
+2025-10-24 02:44:26,651 | INFO | Upserted 345 rows.
+2025-10-24 02:44:26,652 | INFO | Processed chunk offset=2300, total so far=7886
+2025-10-24 02:44:27,458 | INFO | Upserted 349 rows.
+2025-10-24 02:44:27,458 | INFO | Processed chunk offset=2400, total so far=8235
+2025-10-24 02:44:28,272 | INFO | Upserted 342 rows.
+2025-10-24 02:44:28,273 | INFO | Processed chunk offset=2500, total so far=8577
+2025-10-24 02:44:29,076 | INFO | Upserted 340 rows.
+2025-10-24 02:44:29,076 | INFO | Processed chunk offset=2600, total so far=8917
+2025-10-24 02:44:29,901 | INFO | Upserted 331 rows.
+2025-10-24 02:44:29,901 | INFO | Processed chunk offset=2700, total so far=9248
+2025-10-24 02:44:30,775 | INFO | Upserted 325 rows.
+2025-10-24 02:44:30,775 | INFO | Processed chunk offset=2800, total so far=9573
+2025-10-24 02:44:31,572 | INFO | Upserted 318 rows.
+2025-10-24 02:44:31,572 | INFO | Processed chunk offset=2900, total so far=9891
+2025-10-24 02:44:32,457 | INFO | Upserted 324 rows.
+2025-10-24 02:44:32,458 | INFO | Processed chunk offset=3000, total so far=10215
+2025-10-24 02:44:33,143 | INFO | Upserted 318 rows.
+2025-10-24 02:44:33,144 | INFO | Processed chunk offset=3100, total so far=10533
+2025-10-24 02:44:34,214 | INFO | Upserted 330 rows.
+2025-10-24 02:44:34,214 | INFO | Processed chunk offset=3200, total so far=10863
+2025-10-24 02:44:35,148 | INFO | Upserted 342 rows.
+2025-10-24 02:44:35,148 | INFO | Processed chunk offset=3300, total so far=11205
+2025-10-24 02:44:36,103 | INFO | Upserted 339 rows.
+2025-10-24 02:44:36,104 | INFO | Processed chunk offset=3400, total so far=11544
+2025-10-24 02:44:36,957 | INFO | Upserted 340 rows.
+2025-10-24 02:44:36,958 | INFO | Processed chunk offset=3500, total so far=11884
+2025-10-24 02:44:37,766 | INFO | Upserted 348 rows.
+2025-10-24 02:44:37,766 | INFO | Processed chunk offset=3600, total so far=12232
+2025-10-24 02:44:38,923 | INFO | Upserted 328 rows.
+2025-10-24 02:44:38,923 | INFO | Processed chunk offset=3700, total so far=12560
+2025-10-24 02:44:39,744 | INFO | Upserted 320 rows.
+2025-10-24 02:44:39,744 | INFO | Processed chunk offset=3800, total so far=12880
+2025-10-24 02:44:40,587 | INFO | Upserted 326 rows.
+2025-10-24 02:44:40,588 | INFO | Processed chunk offset=3900, total so far=13206
+2025-10-24 02:44:41,813 | INFO | Upserted 319 rows.
+2025-10-24 02:44:41,813 | INFO | Processed chunk offset=4000, total so far=13525
+2025-10-24 02:44:42,645 | INFO | Upserted 310 rows.
+2025-10-24 02:44:42,646 | INFO | Processed chunk offset=4100, total so far=13835
+2025-10-24 02:44:43,456 | INFO | Upserted 319 rows.
+2025-10-24 02:44:43,457 | INFO | Processed chunk offset=4200, total so far=14154
+2025-10-24 02:44:44,370 | INFO | Upserted 319 rows.
+2025-10-24 02:44:44,370 | INFO | Processed chunk offset=4300, total so far=14473
+2025-10-24 02:44:45,399 | INFO | Upserted 314 rows.
+2025-10-24 02:44:45,399 | INFO | Processed chunk offset=4400, total so far=14787
+2025-10-24 02:44:46,245 | INFO | Upserted 315 rows.
+2025-10-24 02:44:46,245 | INFO | Processed chunk offset=4500, total so far=15102
+2025-10-24 02:44:47,294 | INFO | Upserted 322 rows.
+2025-10-24 02:44:47,294 | INFO | Processed chunk offset=4600, total so far=15424
+2025-10-24 02:44:48,151 | INFO | Upserted 319 rows.
+2025-10-24 02:44:48,151 | INFO | Processed chunk offset=4700, total so far=15743
+2025-10-24 02:44:49,213 | INFO | Upserted 315 rows.
+2025-10-24 02:44:49,213 | INFO | Processed chunk offset=4800, total so far=16058
+2025-10-24 02:44:50,331 | INFO | Upserted 315 rows.
+2025-10-24 02:44:50,332 | INFO | Processed chunk offset=4900, total so far=16373
+2025-10-24 02:44:51,414 | INFO | Upserted 316 rows.
+2025-10-24 02:44:51,415 | INFO | Processed chunk offset=5000, total so far=16689
+2025-10-24 02:44:52,511 | INFO | Upserted 305 rows.
+2025-10-24 02:44:52,511 | INFO | Processed chunk offset=5100, total so far=16994
+2025-10-24 02:44:53,591 | INFO | Upserted 305 rows.
+2025-10-24 02:44:53,592 | INFO | Processed chunk offset=5200, total so far=17299
+2025-10-24 02:44:54,443 | INFO | Upserted 309 rows.
+2025-10-24 02:44:54,444 | INFO | Processed chunk offset=5300, total so far=17608
+2025-10-24 02:44:55,243 | INFO | Upserted 303 rows.
+2025-10-24 02:44:55,243 | INFO | Processed chunk offset=5400, total so far=17911
+2025-10-24 02:44:56,033 | INFO | Upserted 305 rows.
+2025-10-24 02:44:56,034 | INFO | Processed chunk offset=5500, total so far=18216
+2025-10-24 02:44:56,881 | INFO | Upserted 327 rows.
+2025-10-24 02:44:56,882 | INFO | Processed chunk offset=5600, total so far=18543
+2025-10-24 02:44:57,745 | INFO | Upserted 336 rows.
+2025-10-24 02:44:57,745 | INFO | Processed chunk offset=5700, total so far=18879
+2025-10-24 02:44:58,815 | INFO | Upserted 322 rows.
+2025-10-24 02:44:58,815 | INFO | Processed chunk offset=5800, total so far=19201
+2025-10-24 02:44:59,658 | INFO | Upserted 323 rows.
+2025-10-24 02:44:59,659 | INFO | Processed chunk offset=5900, total so far=19524
+2025-10-24 02:45:00,704 | INFO | Upserted 315 rows.
+2025-10-24 02:45:00,704 | INFO | Processed chunk offset=6000, total so far=19839
+2025-10-24 02:45:01,800 | INFO | Upserted 312 rows.
+2025-10-24 02:45:01,800 | INFO | Processed chunk offset=6100, total so far=20151
+2025-10-24 02:45:02,903 | INFO | Upserted 308 rows.
+2025-10-24 02:45:02,904 | INFO | Processed chunk offset=6200, total so far=20459
+2025-10-24 02:45:04,016 | INFO | Upserted 319 rows.
+2025-10-24 02:45:04,017 | INFO | Processed chunk offset=6300, total so far=20778
+2025-10-24 02:45:05,210 | INFO | Upserted 323 rows.
+2025-10-24 02:45:05,211 | INFO | Processed chunk offset=6400, total so far=21101
+2025-10-24 02:45:06,054 | INFO | Upserted 328 rows.
+2025-10-24 02:45:06,055 | INFO | Processed chunk offset=6500, total so far=21429
+2025-10-24 02:45:06,850 | INFO | Upserted 323 rows.
+2025-10-24 02:45:06,851 | INFO | Processed chunk offset=6600, total so far=21752
+2025-10-24 02:45:07,670 | INFO | Upserted 325 rows.
+2025-10-24 02:45:07,671 | INFO | Processed chunk offset=6700, total so far=22077
+2025-10-24 02:45:08,454 | INFO | Upserted 325 rows.
+2025-10-24 02:45:08,454 | INFO | Processed chunk offset=6800, total so far=22402
+2025-10-24 02:45:09,510 | INFO | Upserted 319 rows.
+2025-10-24 02:45:09,511 | INFO | Processed chunk offset=6900, total so far=22721
+2025-10-24 02:45:10,344 | INFO | Upserted 322 rows.
+2025-10-24 02:45:10,345 | INFO | Processed chunk offset=7000, total so far=23043
+2025-10-24 02:45:11,415 | INFO | Upserted 327 rows.
+2025-10-24 02:45:11,415 | INFO | Processed chunk offset=7100, total so far=23370
+2025-10-24 02:45:12,515 | INFO | Upserted 320 rows.
+2025-10-24 02:45:12,516 | INFO | Processed chunk offset=7200, total so far=23690
+2025-10-24 02:45:13,372 | INFO | Upserted 327 rows.
+2025-10-24 02:45:13,373 | INFO | Processed chunk offset=7300, total so far=24017
+2025-10-24 02:45:14,284 | INFO | Upserted 335 rows.
+2025-10-24 02:45:14,285 | INFO | Processed chunk offset=7400, total so far=24352
+2025-10-24 02:45:15,496 | INFO | Upserted 326 rows.
+2025-10-24 02:45:15,496 | INFO | Processed chunk offset=7500, total so far=24678
+2025-10-24 02:45:16,615 | INFO | Upserted 321 rows.
+2025-10-24 02:45:16,615 | INFO | Processed chunk offset=7600, total so far=24999
+2025-10-24 02:45:17,707 | INFO | Upserted 321 rows.
+2025-10-24 02:45:17,708 | INFO | Processed chunk offset=7700, total so far=25320
+2025-10-24 02:45:18,538 | INFO | Upserted 314 rows.
+2025-10-24 02:45:18,539 | INFO | Processed chunk offset=7800, total so far=25634
+2025-10-24 02:45:19,378 | INFO | Upserted 309 rows.
+2025-10-24 02:45:19,379 | INFO | Processed chunk offset=7900, total so far=25943
+2025-10-24 02:45:20,269 | INFO | Upserted 314 rows.
+2025-10-24 02:45:20,270 | INFO | Processed chunk offset=8000, total so far=26257
+2025-10-24 02:45:21,150 | INFO | Upserted 318 rows.
+2025-10-24 02:45:21,150 | INFO | Processed chunk offset=8100, total so far=26575
+2025-10-24 02:45:21,947 | INFO | Upserted 317 rows.
+2025-10-24 02:45:21,948 | INFO | Processed chunk offset=8200, total so far=26892
+2025-10-24 02:45:23,006 | INFO | Upserted 315 rows.
+2025-10-24 02:45:23,007 | INFO | Processed chunk offset=8300, total so far=27207
+2025-10-24 02:45:23,843 | INFO | Upserted 314 rows.
+2025-10-24 02:45:23,844 | INFO | Processed chunk offset=8400, total so far=27521
+2025-10-24 02:45:24,665 | INFO | Upserted 314 rows.
+2025-10-24 02:45:24,666 | INFO | Processed chunk offset=8500, total so far=27835
+2025-10-24 02:45:25,448 | INFO | Upserted 314 rows.
+2025-10-24 02:45:25,449 | INFO | Processed chunk offset=8600, total so far=28149
+2025-10-24 02:45:26,396 | INFO | Upserted 312 rows.
+2025-10-24 02:45:26,396 | INFO | Processed chunk offset=8700, total so far=28461
+2025-10-24 02:45:27,496 | INFO | Upserted 310 rows.
+2025-10-24 02:45:27,497 | INFO | Processed chunk offset=8800, total so far=28771
+2025-10-24 02:45:28,351 | INFO | Upserted 312 rows.
+2025-10-24 02:45:28,351 | INFO | Processed chunk offset=8900, total so far=29083
+2025-10-24 02:45:29,136 | INFO | Upserted 317 rows.
+2025-10-24 02:45:29,137 | INFO | Processed chunk offset=9000, total so far=29400
+2025-10-24 02:45:30,046 | INFO | Upserted 314 rows.
+2025-10-24 02:45:30,047 | INFO | Processed chunk offset=9100, total so far=29714
+2025-10-24 02:45:30,780 | INFO | Upserted 317 rows.
+2025-10-24 02:45:30,781 | INFO | Processed chunk offset=9200, total so far=30031
+2025-10-24 02:45:31,596 | INFO | Upserted 328 rows.
+2025-10-24 02:45:31,597 | INFO | Processed chunk offset=9300, total so far=30359
+2025-10-24 02:45:32,706 | INFO | Upserted 330 rows.
+2025-10-24 02:45:32,706 | INFO | Processed chunk offset=9400, total so far=30689
+2025-10-24 02:45:33,814 | INFO | Upserted 323 rows.
+2025-10-24 02:45:33,814 | INFO | Processed chunk offset=9500, total so far=31012
+2025-10-24 02:45:33,816 | INFO | ETL finished | Status=success | Duration=111.02s | Rows=31012
+2025-10-24 14:22:43,075 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 14:22:44,666 | INFO | Upserted 309 rows.
+2025-10-24 14:22:44,666 | INFO | Processed chunk offset=0, total so far=309
+2025-10-24 14:22:45,262 | INFO | Upserted 313 rows.
+2025-10-24 14:22:45,262 | INFO | Processed chunk offset=100, total so far=622
+2025-10-24 14:22:46,349 | INFO | Upserted 340 rows.
+2025-10-24 14:22:46,349 | INFO | Processed chunk offset=200, total so far=962
+2025-10-24 14:22:47,059 | INFO | Upserted 316 rows.
+2025-10-24 14:22:47,060 | INFO | Processed chunk offset=300, total so far=1278
+2025-10-24 14:22:47,746 | INFO | Upserted 318 rows.
+2025-10-24 14:22:47,747 | INFO | Processed chunk offset=400, total so far=1596
+2025-10-24 14:22:48,575 | INFO | Upserted 322 rows.
+2025-10-24 14:22:48,575 | INFO | Processed chunk offset=500, total so far=1918
+2025-10-24 14:22:49,329 | INFO | Upserted 329 rows.
+2025-10-24 14:22:49,330 | INFO | Processed chunk offset=600, total so far=2247
+2025-10-24 14:22:50,077 | INFO | Upserted 319 rows.
+2025-10-24 14:22:50,077 | INFO | Processed chunk offset=700, total so far=2566
+2025-10-24 14:22:51,042 | INFO | Upserted 317 rows.
+2025-10-24 14:22:51,042 | INFO | Processed chunk offset=800, total so far=2883
+2025-10-24 14:22:52,103 | INFO | Upserted 312 rows.
+2025-10-24 14:22:52,103 | INFO | Processed chunk offset=900, total so far=3195
+2025-10-24 14:22:52,771 | INFO | Upserted 333 rows.
+2025-10-24 14:22:52,772 | INFO | Processed chunk offset=1000, total so far=3528
+2025-10-24 14:22:53,688 | INFO | Upserted 318 rows.
+2025-10-24 14:22:53,689 | INFO | Processed chunk offset=1100, total so far=3846
+2025-10-24 14:22:54,449 | INFO | Upserted 321 rows.
+2025-10-24 14:22:54,450 | INFO | Processed chunk offset=1200, total so far=4167
+2025-10-24 14:22:55,261 | INFO | Upserted 333 rows.
+2025-10-24 14:22:55,261 | INFO | Processed chunk offset=1300, total so far=4500
+2025-10-24 14:22:56,018 | INFO | Upserted 305 rows.
+2025-10-24 14:22:56,019 | INFO | Processed chunk offset=1400, total so far=4805
+2025-10-24 14:22:56,871 | INFO | Upserted 328 rows.
+2025-10-24 14:22:56,872 | INFO | Processed chunk offset=1500, total so far=5133
+2025-10-24 14:22:57,772 | INFO | Upserted 320 rows.
+2025-10-24 14:22:57,772 | INFO | Processed chunk offset=1600, total so far=5453
+2025-10-24 14:22:58,647 | INFO | Upserted 305 rows.
+2025-10-24 14:22:58,647 | INFO | Processed chunk offset=1700, total so far=5758
+2025-10-24 14:22:59,337 | INFO | Upserted 331 rows.
+2025-10-24 14:22:59,337 | INFO | Processed chunk offset=1800, total so far=6089
+2025-10-24 14:23:00,157 | INFO | Upserted 328 rows.
+2025-10-24 14:23:00,158 | INFO | Processed chunk offset=1900, total so far=6417
+2025-10-24 14:23:00,837 | INFO | Upserted 318 rows.
+2025-10-24 14:23:00,837 | INFO | Processed chunk offset=2000, total so far=6735
+2025-10-24 14:23:01,819 | INFO | Upserted 312 rows.
+2025-10-24 14:23:01,820 | INFO | Processed chunk offset=2100, total so far=7047
+2025-10-24 14:23:02,514 | INFO | Upserted 335 rows.
+2025-10-24 14:23:02,515 | INFO | Processed chunk offset=2200, total so far=7382
+2025-10-24 14:23:03,150 | INFO | Upserted 318 rows.
+2025-10-24 14:23:03,151 | INFO | Processed chunk offset=2300, total so far=7700
+2025-10-24 14:23:03,976 | INFO | Upserted 332 rows.
+2025-10-24 14:23:03,976 | INFO | Processed chunk offset=2400, total so far=8032
+2025-10-24 14:23:04,853 | INFO | Upserted 317 rows.
+2025-10-24 14:23:04,853 | INFO | Processed chunk offset=2500, total so far=8349
+2025-10-24 14:23:05,535 | INFO | Upserted 337 rows.
+2025-10-24 14:23:05,535 | INFO | Processed chunk offset=2600, total so far=8686
+2025-10-24 14:23:06,469 | INFO | Upserted 333 rows.
+2025-10-24 14:23:06,470 | INFO | Processed chunk offset=2700, total so far=9019
+2025-10-24 14:23:07,212 | INFO | Upserted 345 rows.
+2025-10-24 14:23:07,213 | INFO | Processed chunk offset=2800, total so far=9364
+2025-10-24 14:23:08,069 | INFO | Upserted 327 rows.
+2025-10-24 14:23:08,070 | INFO | Processed chunk offset=2900, total so far=9691
+2025-10-24 14:23:08,741 | INFO | Upserted 329 rows.
+2025-10-24 14:23:08,742 | INFO | Processed chunk offset=3000, total so far=10020
+2025-10-24 14:23:09,359 | INFO | Upserted 321 rows.
+2025-10-24 14:23:09,359 | INFO | Processed chunk offset=3100, total so far=10341
+2025-10-24 14:23:10,266 | INFO | Upserted 307 rows.
+2025-10-24 14:23:10,267 | INFO | Processed chunk offset=3200, total so far=10648
+2025-10-24 14:23:11,170 | INFO | Upserted 333 rows.
+2025-10-24 14:23:11,170 | INFO | Processed chunk offset=3300, total so far=10981
+2025-10-24 14:23:11,829 | INFO | Upserted 329 rows.
+2025-10-24 14:23:11,830 | INFO | Processed chunk offset=3400, total so far=11310
+2025-10-24 14:23:12,409 | INFO | Upserted 311 rows.
+2025-10-24 14:23:12,409 | INFO | Processed chunk offset=3500, total so far=11621
+2025-10-24 14:23:13,134 | INFO | Upserted 343 rows.
+2025-10-24 14:23:13,134 | INFO | Processed chunk offset=3600, total so far=11964
+2025-10-24 14:23:13,970 | INFO | Upserted 332 rows.
+2025-10-24 14:23:13,971 | INFO | Processed chunk offset=3700, total so far=12296
+2025-10-24 14:23:14,646 | INFO | Upserted 320 rows.
+2025-10-24 14:23:14,647 | INFO | Processed chunk offset=3800, total so far=12616
+2025-10-24 14:23:15,353 | INFO | Upserted 308 rows.
+2025-10-24 14:23:15,354 | INFO | Processed chunk offset=3900, total so far=12924
+2025-10-24 14:23:16,054 | INFO | Upserted 337 rows.
+2025-10-24 14:23:16,055 | INFO | Processed chunk offset=4000, total so far=13261
+2025-10-24 14:23:16,841 | INFO | Upserted 313 rows.
+2025-10-24 14:23:16,842 | INFO | Processed chunk offset=4100, total so far=13574
+2025-10-24 14:23:17,535 | INFO | Upserted 319 rows.
+2025-10-24 14:23:17,536 | INFO | Processed chunk offset=4200, total so far=13893
+2025-10-24 14:23:18,365 | INFO | Upserted 315 rows.
+2025-10-24 14:23:18,365 | INFO | Processed chunk offset=4300, total so far=14208
+2025-10-24 14:23:19,270 | INFO | Upserted 315 rows.
+2025-10-24 14:23:19,270 | INFO | Processed chunk offset=4400, total so far=14523
+2025-10-24 14:23:19,952 | INFO | Upserted 324 rows.
+2025-10-24 14:23:19,953 | INFO | Processed chunk offset=4500, total so far=14847
+2025-10-24 14:23:20,628 | INFO | Upserted 319 rows.
+2025-10-24 14:23:20,629 | INFO | Processed chunk offset=4600, total so far=15166
+2025-10-24 14:23:21,464 | INFO | Upserted 299 rows.
+2025-10-24 14:23:21,464 | INFO | Processed chunk offset=4700, total so far=15465
+2025-10-24 14:23:22,378 | INFO | Upserted 345 rows.
+2025-10-24 14:23:22,378 | INFO | Processed chunk offset=4800, total so far=15810
+2025-10-24 14:23:23,179 | INFO | Upserted 313 rows.
+2025-10-24 14:23:23,180 | INFO | Processed chunk offset=4900, total so far=16123
+2025-10-24 14:23:23,951 | INFO | Upserted 316 rows.
+2025-10-24 14:23:23,952 | INFO | Processed chunk offset=5000, total so far=16439
+2025-10-24 14:23:24,770 | INFO | Upserted 301 rows.
+2025-10-24 14:23:24,771 | INFO | Processed chunk offset=5100, total so far=16740
+2025-10-24 14:23:25,449 | INFO | Upserted 324 rows.
+2025-10-24 14:23:25,450 | INFO | Processed chunk offset=5200, total so far=17064
+2025-10-24 14:23:26,162 | INFO | Upserted 326 rows.
+2025-10-24 14:23:26,163 | INFO | Processed chunk offset=5300, total so far=17390
+2025-10-24 14:23:26,947 | INFO | Upserted 327 rows.
+2025-10-24 14:23:26,947 | INFO | Processed chunk offset=5400, total so far=17717
+2025-10-24 14:23:27,788 | INFO | Upserted 298 rows.
+2025-10-24 14:23:27,788 | INFO | Processed chunk offset=5500, total so far=18015
+2025-10-24 14:23:28,572 | INFO | Upserted 318 rows.
+2025-10-24 14:23:28,573 | INFO | Processed chunk offset=5600, total so far=18333
+2025-10-24 14:23:29,536 | INFO | Upserted 328 rows.
+2025-10-24 14:23:29,537 | INFO | Processed chunk offset=5700, total so far=18661
+2025-10-24 14:23:30,216 | INFO | Upserted 309 rows.
+2025-10-24 14:23:30,216 | INFO | Processed chunk offset=5800, total so far=18970
+2025-10-24 14:23:31,231 | INFO | Upserted 331 rows.
+2025-10-24 14:23:31,231 | INFO | Processed chunk offset=5900, total so far=19301
+2025-10-24 14:23:31,853 | INFO | Upserted 353 rows.
+2025-10-24 14:23:31,853 | INFO | Processed chunk offset=6000, total so far=19654
+2025-10-24 14:23:32,537 | INFO | Upserted 331 rows.
+2025-10-24 14:23:32,538 | INFO | Processed chunk offset=6100, total so far=19985
+2025-10-24 14:23:33,363 | INFO | Upserted 314 rows.
+2025-10-24 14:23:33,364 | INFO | Processed chunk offset=6200, total so far=20299
+2025-10-24 14:23:34,138 | INFO | Upserted 308 rows.
+2025-10-24 14:23:34,138 | INFO | Processed chunk offset=6300, total so far=20607
+2025-10-24 14:23:34,833 | INFO | Upserted 311 rows.
+2025-10-24 14:23:34,834 | INFO | Processed chunk offset=6400, total so far=20918
+2025-10-24 14:23:35,680 | INFO | Upserted 344 rows.
+2025-10-24 14:23:35,681 | INFO | Processed chunk offset=6500, total so far=21262
+2025-10-24 14:23:36,600 | INFO | Upserted 343 rows.
+2025-10-24 14:23:36,600 | INFO | Processed chunk offset=6600, total so far=21605
+2025-10-24 14:23:37,442 | INFO | Upserted 319 rows.
+2025-10-24 14:23:37,442 | INFO | Processed chunk offset=6700, total so far=21924
+2025-10-24 14:23:38,140 | INFO | Upserted 352 rows.
+2025-10-24 14:23:38,140 | INFO | Processed chunk offset=6800, total so far=22276
+2025-10-24 14:23:38,916 | INFO | Upserted 332 rows.
+2025-10-24 14:23:38,916 | INFO | Processed chunk offset=6900, total so far=22608
+2025-10-24 14:23:39,783 | INFO | Upserted 304 rows.
+2025-10-24 14:23:39,783 | INFO | Processed chunk offset=7000, total so far=22912
+2025-10-24 14:23:40,659 | INFO | Upserted 315 rows.
+2025-10-24 14:23:40,660 | INFO | Processed chunk offset=7100, total so far=23227
+2025-10-24 14:23:41,365 | INFO | Upserted 312 rows.
+2025-10-24 14:23:41,365 | INFO | Processed chunk offset=7200, total so far=23539
+2025-10-24 14:23:42,044 | INFO | Upserted 323 rows.
+2025-10-24 14:23:42,045 | INFO | Processed chunk offset=7300, total so far=23862
+2025-10-24 14:23:42,862 | INFO | Upserted 336 rows.
+2025-10-24 14:23:42,862 | INFO | Processed chunk offset=7400, total so far=24198
+2025-10-24 14:23:43,665 | INFO | Upserted 337 rows.
+2025-10-24 14:23:43,665 | INFO | Processed chunk offset=7500, total so far=24535
+2025-10-24 14:23:44,345 | INFO | Upserted 331 rows.
+2025-10-24 14:23:44,346 | INFO | Processed chunk offset=7600, total so far=24866
+2025-10-24 14:23:45,031 | INFO | Upserted 323 rows.
+2025-10-24 14:23:45,031 | INFO | Processed chunk offset=7700, total so far=25189
+2025-10-24 14:23:45,725 | INFO | Upserted 328 rows.
+2025-10-24 14:23:45,725 | INFO | Processed chunk offset=7800, total so far=25517
+2025-10-24 14:23:46,545 | INFO | Upserted 335 rows.
+2025-10-24 14:23:46,545 | INFO | Processed chunk offset=7900, total so far=25852
+2025-10-24 14:23:47,365 | INFO | Upserted 306 rows.
+2025-10-24 14:23:47,365 | INFO | Processed chunk offset=8000, total so far=26158
+2025-10-24 14:23:48,144 | INFO | Upserted 324 rows.
+2025-10-24 14:23:48,144 | INFO | Processed chunk offset=8100, total so far=26482
+2025-10-24 14:23:48,845 | INFO | Upserted 325 rows.
+2025-10-24 14:23:48,846 | INFO | Processed chunk offset=8200, total so far=26807
+2025-10-24 14:23:49,737 | INFO | Upserted 349 rows.
+2025-10-24 14:23:49,737 | INFO | Processed chunk offset=8300, total so far=27156
+2025-10-24 14:23:50,554 | INFO | Upserted 332 rows.
+2025-10-24 14:23:50,555 | INFO | Processed chunk offset=8400, total so far=27488
+2025-10-24 14:23:51,368 | INFO | Upserted 323 rows.
+2025-10-24 14:23:51,368 | INFO | Processed chunk offset=8500, total so far=27811
+2025-10-24 14:23:52,263 | INFO | Upserted 336 rows.
+2025-10-24 14:23:52,263 | INFO | Processed chunk offset=8600, total so far=28147
+2025-10-24 14:23:53,322 | INFO | Upserted 316 rows.
+2025-10-24 14:23:53,323 | INFO | Processed chunk offset=8700, total so far=28463
+2025-10-24 14:23:54,269 | INFO | Upserted 339 rows.
+2025-10-24 14:23:54,269 | INFO | Processed chunk offset=8800, total so far=28802
+2025-10-24 14:23:54,919 | INFO | Upserted 325 rows.
+2025-10-24 14:23:54,919 | INFO | Processed chunk offset=8900, total so far=29127
+2025-10-24 14:23:55,607 | INFO | Upserted 322 rows.
+2025-10-24 14:23:55,608 | INFO | Processed chunk offset=9000, total so far=29449
+2025-10-24 14:23:56,338 | INFO | Upserted 329 rows.
+2025-10-24 14:23:56,339 | INFO | Processed chunk offset=9100, total so far=29778
+2025-10-24 14:23:57,047 | INFO | Upserted 314 rows.
+2025-10-24 14:23:57,047 | INFO | Processed chunk offset=9200, total so far=30092
+2025-10-24 14:23:57,967 | INFO | Upserted 318 rows.
+2025-10-24 14:23:57,968 | INFO | Processed chunk offset=9300, total so far=30410
+2025-10-24 14:23:58,886 | INFO | Upserted 317 rows.
+2025-10-24 14:23:58,886 | INFO | Processed chunk offset=9400, total so far=30727
+2025-10-24 14:23:59,542 | INFO | Upserted 307 rows.
+2025-10-24 14:23:59,542 | INFO | Processed chunk offset=9500, total so far=31034
+2025-10-24 14:24:00,430 | INFO | Upserted 319 rows.
+2025-10-24 14:24:00,431 | INFO | Processed chunk offset=9600, total so far=31353
+2025-10-24 14:24:01,343 | INFO | Upserted 321 rows.
+2025-10-24 14:24:01,344 | INFO | Processed chunk offset=9700, total so far=31674
+2025-10-24 14:24:02,495 | INFO | Upserted 322 rows.
+2025-10-24 14:24:02,496 | INFO | Processed chunk offset=9800, total so far=31996
+2025-10-24 14:24:03,381 | INFO | Upserted 338 rows.
+2025-10-24 14:24:03,381 | INFO | Processed chunk offset=9900, total so far=32334
+2025-10-24 14:24:03,385 | INFO | ETL finished | Mode=historical | Status=success | Duration=80.31s | Rows=32334
+2025-10-24 14:26:53,284 | INFO | ETL started in DAILY mode.
+2025-10-24 14:26:54,412 | INFO | No more data to process.
+2025-10-24 14:26:54,427 | INFO | ETL finished | Mode=daily | Status=success | Duration=1.13s | Rows=0
+2025-10-24 14:49:49,846 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 14:50:42,413 | INFO | Upserted 309 rows.
+2025-10-24 14:50:42,413 | INFO | Processed chunk offset=0, total so far=309
+2025-10-24 14:50:43,287 | INFO | Upserted 313 rows.
+2025-10-24 14:50:43,287 | INFO | Processed chunk offset=100, total so far=622
+2025-10-24 14:50:44,185 | INFO | Upserted 340 rows.
+2025-10-24 14:50:44,186 | INFO | Processed chunk offset=200, total so far=962
+2025-10-24 14:50:45,076 | INFO | Upserted 316 rows.
+2025-10-24 14:50:45,077 | INFO | Processed chunk offset=300, total so far=1278
+2025-10-24 14:50:45,872 | INFO | Upserted 318 rows.
+2025-10-24 14:50:45,873 | INFO | Processed chunk offset=400, total so far=1596
+2025-10-24 14:50:46,707 | INFO | Upserted 322 rows.
+2025-10-24 14:50:46,707 | INFO | Processed chunk offset=500, total so far=1918
+2025-10-24 14:50:47,943 | INFO | Upserted 329 rows.
+2025-10-24 14:50:47,944 | INFO | Processed chunk offset=600, total so far=2247
+2025-10-24 14:50:48,942 | INFO | Upserted 319 rows.
+2025-10-24 14:50:48,942 | INFO | Processed chunk offset=700, total so far=2566
+2025-10-24 14:50:49,939 | INFO | Upserted 317 rows.
+2025-10-24 14:50:49,940 | INFO | Processed chunk offset=800, total so far=2883
+2025-10-24 14:50:51,193 | INFO | Upserted 312 rows.
+2025-10-24 14:50:51,194 | INFO | Processed chunk offset=900, total so far=3195
+2025-10-24 14:50:52,099 | INFO | Upserted 333 rows.
+2025-10-24 14:50:52,099 | INFO | Processed chunk offset=1000, total so far=3528
+2025-10-24 14:50:53,016 | INFO | Upserted 318 rows.
+2025-10-24 14:50:53,017 | INFO | Processed chunk offset=1100, total so far=3846
+2025-10-24 14:50:53,958 | INFO | Upserted 321 rows.
+2025-10-24 14:50:53,958 | INFO | Processed chunk offset=1200, total so far=4167
+2025-10-24 14:50:54,900 | INFO | Upserted 333 rows.
+2025-10-24 14:50:54,901 | INFO | Processed chunk offset=1300, total so far=4500
+2025-10-24 14:50:55,817 | INFO | Upserted 305 rows.
+2025-10-24 14:50:55,818 | INFO | Processed chunk offset=1400, total so far=4805
+2025-10-24 14:50:56,728 | INFO | Upserted 328 rows.
+2025-10-24 14:50:56,729 | INFO | Processed chunk offset=1500, total so far=5133
+2025-10-24 14:50:57,578 | INFO | Upserted 320 rows.
+2025-10-24 14:50:57,579 | INFO | Processed chunk offset=1600, total so far=5453
+2025-10-24 14:50:58,470 | INFO | Upserted 305 rows.
+2025-10-24 14:50:58,471 | INFO | Processed chunk offset=1700, total so far=5758
+2025-10-24 14:50:59,365 | INFO | Upserted 331 rows.
+2025-10-24 14:50:59,366 | INFO | Processed chunk offset=1800, total so far=6089
+2025-10-24 14:51:00,266 | INFO | Upserted 328 rows.
+2025-10-24 14:51:00,266 | INFO | Processed chunk offset=1900, total so far=6417
+2025-10-24 14:51:01,081 | INFO | Upserted 318 rows.
+2025-10-24 14:51:01,081 | INFO | Processed chunk offset=2000, total so far=6735
+2025-10-24 14:51:01,973 | INFO | Upserted 312 rows.
+2025-10-24 14:51:01,973 | INFO | Processed chunk offset=2100, total so far=7047
+2025-10-24 14:51:02,910 | INFO | Upserted 335 rows.
+2025-10-24 14:51:02,910 | INFO | Processed chunk offset=2200, total so far=7382
+2025-10-24 14:51:03,803 | INFO | Upserted 318 rows.
+2025-10-24 14:51:03,804 | INFO | Processed chunk offset=2300, total so far=7700
+2025-10-24 14:51:04,681 | INFO | Upserted 332 rows.
+2025-10-24 14:51:04,681 | INFO | Processed chunk offset=2400, total so far=8032
+2025-10-24 14:51:05,597 | INFO | Upserted 317 rows.
+2025-10-24 14:51:05,597 | INFO | Processed chunk offset=2500, total so far=8349
+2025-10-24 14:51:06,511 | INFO | Upserted 337 rows.
+2025-10-24 14:51:06,512 | INFO | Processed chunk offset=2600, total so far=8686
+2025-10-24 14:51:07,374 | INFO | Upserted 333 rows.
+2025-10-24 14:51:07,374 | INFO | Processed chunk offset=2700, total so far=9019
+2025-10-24 14:51:08,303 | INFO | Upserted 345 rows.
+2025-10-24 14:51:08,303 | INFO | Processed chunk offset=2800, total so far=9364
+2025-10-24 14:51:09,200 | INFO | Upserted 327 rows.
+2025-10-24 14:51:09,200 | INFO | Processed chunk offset=2900, total so far=9691
+2025-10-24 14:51:10,091 | INFO | Upserted 329 rows.
+2025-10-24 14:51:10,092 | INFO | Processed chunk offset=3000, total so far=10020
+2025-10-24 14:51:10,960 | INFO | Upserted 321 rows.
+2025-10-24 14:51:10,961 | INFO | Processed chunk offset=3100, total so far=10341
+2025-10-24 14:51:11,761 | INFO | Upserted 307 rows.
+2025-10-24 14:51:11,762 | INFO | Processed chunk offset=3200, total so far=10648
+2025-10-24 14:51:12,592 | INFO | Upserted 333 rows.
+2025-10-24 14:51:12,592 | INFO | Processed chunk offset=3300, total so far=10981
+2025-10-24 14:51:13,497 | INFO | Upserted 329 rows.
+2025-10-24 14:51:13,497 | INFO | Processed chunk offset=3400, total so far=11310
+2025-10-24 14:51:14,377 | INFO | Upserted 311 rows.
+2025-10-24 14:51:14,378 | INFO | Processed chunk offset=3500, total so far=11621
+2025-10-24 14:51:15,282 | INFO | Upserted 343 rows.
+2025-10-24 14:51:15,283 | INFO | Processed chunk offset=3600, total so far=11964
+2025-10-24 14:51:16,199 | INFO | Upserted 332 rows.
+2025-10-24 14:51:16,200 | INFO | Processed chunk offset=3700, total so far=12296
+2025-10-24 14:51:17,072 | INFO | Upserted 320 rows.
+2025-10-24 14:51:17,072 | INFO | Processed chunk offset=3800, total so far=12616
+2025-10-24 14:51:17,872 | INFO | Upserted 308 rows.
+2025-10-24 14:51:17,872 | INFO | Processed chunk offset=3900, total so far=12924
+2025-10-24 14:51:18,774 | INFO | Upserted 337 rows.
+2025-10-24 14:51:18,774 | INFO | Processed chunk offset=4000, total so far=13261
+2025-10-24 14:51:19,585 | INFO | Upserted 313 rows.
+2025-10-24 14:51:19,585 | INFO | Processed chunk offset=4100, total so far=13574
+2025-10-24 14:51:20,482 | INFO | Upserted 319 rows.
+2025-10-24 14:51:20,483 | INFO | Processed chunk offset=4200, total so far=13893
+2025-10-24 14:51:21,380 | INFO | Upserted 315 rows.
+2025-10-24 14:51:21,381 | INFO | Processed chunk offset=4300, total so far=14208
+2025-10-24 14:51:22,279 | INFO | Upserted 315 rows.
+2025-10-24 14:51:22,279 | INFO | Processed chunk offset=4400, total so far=14523
+2025-10-24 14:51:23,186 | INFO | Upserted 324 rows.
+2025-10-24 14:51:23,186 | INFO | Processed chunk offset=4500, total so far=14847
+2025-10-24 14:51:24,099 | INFO | Upserted 319 rows.
+2025-10-24 14:51:24,099 | INFO | Processed chunk offset=4600, total so far=15166
+2025-10-24 14:51:24,983 | INFO | Upserted 299 rows.
+2025-10-24 14:51:24,984 | INFO | Processed chunk offset=4700, total so far=15465
+2025-10-24 14:51:25,873 | INFO | Upserted 345 rows.
+2025-10-24 14:51:25,873 | INFO | Processed chunk offset=4800, total so far=15810
+2025-10-24 14:51:26,762 | INFO | Upserted 313 rows.
+2025-10-24 14:51:26,763 | INFO | Processed chunk offset=4900, total so far=16123
+2025-10-24 14:51:27,598 | INFO | Upserted 316 rows.
+2025-10-24 14:51:27,598 | INFO | Processed chunk offset=5000, total so far=16439
+2025-10-24 14:51:28,475 | INFO | Upserted 301 rows.
+2025-10-24 14:51:28,476 | INFO | Processed chunk offset=5100, total so far=16740
+2025-10-24 14:51:29,280 | INFO | Upserted 324 rows.
+2025-10-24 14:51:29,281 | INFO | Processed chunk offset=5200, total so far=17064
+2025-10-24 14:51:30,168 | INFO | Upserted 326 rows.
+2025-10-24 14:51:30,169 | INFO | Processed chunk offset=5300, total so far=17390
+2025-10-24 14:51:30,965 | INFO | Upserted 327 rows.
+2025-10-24 14:51:30,965 | INFO | Processed chunk offset=5400, total so far=17717
+2025-10-24 14:51:31,789 | INFO | Upserted 298 rows.
+2025-10-24 14:51:31,790 | INFO | Processed chunk offset=5500, total so far=18015
+2025-10-24 14:51:32,656 | INFO | Upserted 318 rows.
+2025-10-24 14:51:32,656 | INFO | Processed chunk offset=5600, total so far=18333
+2025-10-24 14:51:33,485 | INFO | Upserted 328 rows.
+2025-10-24 14:51:33,486 | INFO | Processed chunk offset=5700, total so far=18661
+2025-10-24 14:51:34,376 | INFO | Upserted 309 rows.
+2025-10-24 14:51:34,376 | INFO | Processed chunk offset=5800, total so far=18970
+2025-10-24 14:51:35,569 | INFO | Upserted 331 rows.
+2025-10-24 14:51:35,569 | INFO | Processed chunk offset=5900, total so far=19301
+2025-10-24 14:51:36,484 | INFO | Upserted 353 rows.
+2025-10-24 14:51:36,484 | INFO | Processed chunk offset=6000, total so far=19654
+2025-10-24 14:51:37,374 | INFO | Upserted 331 rows.
+2025-10-24 14:51:37,374 | INFO | Processed chunk offset=6100, total so far=19985
+2025-10-24 14:51:38,284 | INFO | Upserted 314 rows.
+2025-10-24 14:51:38,285 | INFO | Processed chunk offset=6200, total so far=20299
+2025-10-24 14:51:39,158 | INFO | Upserted 308 rows.
+2025-10-24 14:51:39,158 | INFO | Processed chunk offset=6300, total so far=20607
+2025-10-24 14:51:39,960 | INFO | Upserted 311 rows.
+2025-10-24 14:51:39,960 | INFO | Processed chunk offset=6400, total so far=20918
+2025-10-24 14:51:40,787 | INFO | Upserted 344 rows.
+2025-10-24 14:51:40,787 | INFO | Processed chunk offset=6500, total so far=21262
+2025-10-24 14:51:41,723 | INFO | Upserted 343 rows.
+2025-10-24 14:51:41,724 | INFO | Processed chunk offset=6600, total so far=21605
+2025-10-24 14:51:42,570 | INFO | Upserted 319 rows.
+2025-10-24 14:51:42,571 | INFO | Processed chunk offset=6700, total so far=21924
+2025-10-24 14:51:43,504 | INFO | Upserted 352 rows.
+2025-10-24 14:51:43,504 | INFO | Processed chunk offset=6800, total so far=22276
+2025-10-24 14:51:44,473 | INFO | Upserted 332 rows.
+2025-10-24 14:51:44,473 | INFO | Processed chunk offset=6900, total so far=22608
+2025-10-24 14:51:45,422 | INFO | Upserted 304 rows.
+2025-10-24 14:51:45,422 | INFO | Processed chunk offset=7000, total so far=22912
+2025-10-24 14:51:46,432 | INFO | Upserted 315 rows.
+2025-10-24 14:51:46,433 | INFO | Processed chunk offset=7100, total so far=23227
+2025-10-24 14:51:47,326 | INFO | Upserted 312 rows.
+2025-10-24 14:51:47,326 | INFO | Processed chunk offset=7200, total so far=23539
+2025-10-24 14:51:48,218 | INFO | Upserted 323 rows.
+2025-10-24 14:51:48,220 | INFO | Processed chunk offset=7300, total so far=23862
+2025-10-24 14:51:49,091 | INFO | Upserted 336 rows.
+2025-10-24 14:51:49,092 | INFO | Processed chunk offset=7400, total so far=24198
+2025-10-24 14:51:49,983 | INFO | Upserted 337 rows.
+2025-10-24 14:51:49,983 | INFO | Processed chunk offset=7500, total so far=24535
+2025-10-24 14:51:50,889 | INFO | Upserted 331 rows.
+2025-10-24 14:51:50,889 | INFO | Processed chunk offset=7600, total so far=24866
+2025-10-24 14:51:51,791 | INFO | Upserted 323 rows.
+2025-10-24 14:51:51,792 | INFO | Processed chunk offset=7700, total so far=25189
+2025-10-24 14:51:52,679 | INFO | Upserted 328 rows.
+2025-10-24 14:51:52,680 | INFO | Processed chunk offset=7800, total so far=25517
+2025-10-24 14:51:53,498 | INFO | Upserted 335 rows.
+2025-10-24 14:51:53,498 | INFO | Processed chunk offset=7900, total so far=25852
+2025-10-24 14:51:54,370 | INFO | Upserted 306 rows.
+2025-10-24 14:51:54,370 | INFO | Processed chunk offset=8000, total so far=26158
+2025-10-24 14:51:55,185 | INFO | Upserted 324 rows.
+2025-10-24 14:51:55,185 | INFO | Processed chunk offset=8100, total so far=26482
+2025-10-24 14:51:56,073 | INFO | Upserted 325 rows.
+2025-10-24 14:51:56,074 | INFO | Processed chunk offset=8200, total so far=26807
+2025-10-24 14:51:56,983 | INFO | Upserted 349 rows.
+2025-10-24 14:51:56,984 | INFO | Processed chunk offset=8300, total so far=27156
+2025-10-24 14:51:57,887 | INFO | Upserted 332 rows.
+2025-10-24 14:51:57,888 | INFO | Processed chunk offset=8400, total so far=27488
+2025-10-24 14:51:58,816 | INFO | Upserted 323 rows.
+2025-10-24 14:51:58,817 | INFO | Processed chunk offset=8500, total so far=27811
+2025-10-24 14:51:59,709 | INFO | Upserted 336 rows.
+2025-10-24 14:51:59,710 | INFO | Processed chunk offset=8600, total so far=28147
+2025-10-24 14:52:00,586 | INFO | Upserted 316 rows.
+2025-10-24 14:52:00,587 | INFO | Processed chunk offset=8700, total so far=28463
+2025-10-24 14:52:01,477 | INFO | Upserted 339 rows.
+2025-10-24 14:52:01,478 | INFO | Processed chunk offset=8800, total so far=28802
+2025-10-24 14:52:02,380 | INFO | Upserted 325 rows.
+2025-10-24 14:52:02,380 | INFO | Processed chunk offset=8900, total so far=29127
+2025-10-24 14:52:03,261 | INFO | Upserted 322 rows.
+2025-10-24 14:52:03,261 | INFO | Processed chunk offset=9000, total so far=29449
+2025-10-24 14:52:04,233 | INFO | Upserted 329 rows.
+2025-10-24 14:52:04,234 | INFO | Processed chunk offset=9100, total so far=29778
+2025-10-24 14:52:05,155 | INFO | Upserted 314 rows.
+2025-10-24 14:52:05,156 | INFO | Processed chunk offset=9200, total so far=30092
+2025-10-24 14:52:05,970 | INFO | Upserted 318 rows.
+2025-10-24 14:52:05,971 | INFO | Processed chunk offset=9300, total so far=30410
+2025-10-24 14:52:06,875 | INFO | Upserted 317 rows.
+2025-10-24 14:52:06,876 | INFO | Processed chunk offset=9400, total so far=30727
+2025-10-24 14:52:07,676 | INFO | Upserted 307 rows.
+2025-10-24 14:52:07,677 | INFO | Processed chunk offset=9500, total so far=31034
+2025-10-24 14:52:08,572 | INFO | Upserted 319 rows.
+2025-10-24 14:52:08,573 | INFO | Processed chunk offset=9600, total so far=31353
+2025-10-24 14:52:09,375 | INFO | Upserted 321 rows.
+2025-10-24 14:52:09,375 | INFO | Processed chunk offset=9700, total so far=31674
+2025-10-24 14:52:10,313 | INFO | Upserted 322 rows.
+2025-10-24 14:52:10,313 | INFO | Processed chunk offset=9800, total so far=31996
+2025-10-24 14:52:11,188 | INFO | Upserted 338 rows.
+2025-10-24 14:52:11,188 | INFO | Processed chunk offset=9900, total so far=32334
+2025-10-24 14:52:11,191 | INFO | ETL finished | Mode=historical | Status=success | Duration=141.34s | Rows=32334
+2025-10-24 14:53:37,854 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 14:53:40,135 | INFO | Upserted 309 rows.
+2025-10-24 14:53:40,135 | INFO | Processed chunk offset=0, total so far=309
+2025-10-24 14:53:41,007 | INFO | Upserted 313 rows.
+2025-10-24 14:53:41,008 | INFO | Processed chunk offset=100, total so far=622
+2025-10-24 14:53:42,056 | INFO | Upserted 340 rows.
+2025-10-24 14:53:42,056 | INFO | Processed chunk offset=200, total so far=962
+2025-10-24 14:53:42,915 | INFO | Upserted 316 rows.
+2025-10-24 14:53:42,916 | INFO | Processed chunk offset=300, total so far=1278
+2025-10-24 14:53:44,190 | INFO | Upserted 318 rows.
+2025-10-24 14:53:44,190 | INFO | Processed chunk offset=400, total so far=1596
+2025-10-24 14:53:45,732 | INFO | Upserted 322 rows.
+2025-10-24 14:53:45,732 | INFO | Processed chunk offset=500, total so far=1918
+2025-10-24 14:53:46,644 | INFO | Upserted 329 rows.
+2025-10-24 14:53:46,645 | INFO | Processed chunk offset=600, total so far=2247
+2025-10-24 14:53:47,529 | INFO | Upserted 319 rows.
+2025-10-24 14:53:47,529 | INFO | Processed chunk offset=700, total so far=2566
+2025-10-24 14:53:48,399 | INFO | Upserted 317 rows.
+2025-10-24 14:53:48,400 | INFO | Processed chunk offset=800, total so far=2883
+2025-10-24 14:53:49,332 | INFO | Upserted 312 rows.
+2025-10-24 14:53:49,333 | INFO | Processed chunk offset=900, total so far=3195
+2025-10-24 14:53:50,325 | INFO | Upserted 333 rows.
+2025-10-24 14:53:50,326 | INFO | Processed chunk offset=1000, total so far=3528
+2025-10-24 14:53:51,298 | INFO | Upserted 318 rows.
+2025-10-24 14:53:51,298 | INFO | Processed chunk offset=1100, total so far=3846
+2025-10-24 14:53:53,119 | INFO | Upserted 321 rows.
+2025-10-24 14:53:53,120 | INFO | Processed chunk offset=1200, total so far=4167
+2025-10-24 14:53:54,152 | INFO | Upserted 333 rows.
+2025-10-24 14:53:54,153 | INFO | Processed chunk offset=1300, total so far=4500
+2025-10-24 14:53:55,525 | INFO | Upserted 305 rows.
+2025-10-24 14:53:55,526 | INFO | Processed chunk offset=1400, total so far=4805
+2025-10-24 14:53:56,604 | INFO | Upserted 328 rows.
+2025-10-24 14:53:56,605 | INFO | Processed chunk offset=1500, total so far=5133
+2025-10-24 14:53:57,521 | INFO | Upserted 320 rows.
+2025-10-24 14:53:57,522 | INFO | Processed chunk offset=1600, total so far=5453
+2025-10-24 14:53:58,553 | INFO | Upserted 305 rows.
+2025-10-24 14:53:58,554 | INFO | Processed chunk offset=1700, total so far=5758
+2025-10-24 14:53:59,537 | INFO | Upserted 331 rows.
+2025-10-24 14:53:59,538 | INFO | Processed chunk offset=1800, total so far=6089
+2025-10-24 14:54:00,420 | INFO | Upserted 328 rows.
+2025-10-24 14:54:00,421 | INFO | Processed chunk offset=1900, total so far=6417
+2025-10-24 14:54:01,521 | INFO | Upserted 318 rows.
+2025-10-24 14:54:01,522 | INFO | Processed chunk offset=2000, total so far=6735
+2025-10-24 14:54:02,439 | INFO | Upserted 312 rows.
+2025-10-24 14:54:02,439 | INFO | Processed chunk offset=2100, total so far=7047
+2025-10-24 14:54:03,322 | INFO | Upserted 335 rows.
+2025-10-24 14:54:03,322 | INFO | Processed chunk offset=2200, total so far=7382
+2025-10-24 14:54:04,218 | INFO | Upserted 318 rows.
+2025-10-24 14:54:04,219 | INFO | Processed chunk offset=2300, total so far=7700
+2025-10-24 14:54:05,140 | INFO | Upserted 332 rows.
+2025-10-24 14:54:05,141 | INFO | Processed chunk offset=2400, total so far=8032
+2025-10-24 14:54:06,194 | INFO | Upserted 317 rows.
+2025-10-24 14:54:06,195 | INFO | Processed chunk offset=2500, total so far=8349
+2025-10-24 14:54:07,190 | INFO | Upserted 337 rows.
+2025-10-24 14:54:07,190 | INFO | Processed chunk offset=2600, total so far=8686
+2025-10-24 14:54:08,289 | INFO | Upserted 333 rows.
+2025-10-24 14:54:08,290 | INFO | Processed chunk offset=2700, total so far=9019
+2025-10-24 14:54:09,249 | INFO | Upserted 345 rows.
+2025-10-24 14:54:09,249 | INFO | Processed chunk offset=2800, total so far=9364
+2025-10-24 14:54:10,211 | INFO | Upserted 327 rows.
+2025-10-24 14:54:10,212 | INFO | Processed chunk offset=2900, total so far=9691
+2025-10-24 14:54:11,457 | INFO | Upserted 329 rows.
+2025-10-24 14:54:11,458 | INFO | Processed chunk offset=3000, total so far=10020
+2025-10-24 14:54:12,321 | INFO | Upserted 321 rows.
+2025-10-24 14:54:12,321 | INFO | Processed chunk offset=3100, total so far=10341
+2025-10-24 14:54:13,564 | INFO | Upserted 307 rows.
+2025-10-24 14:54:13,564 | INFO | Processed chunk offset=3200, total so far=10648
+2025-10-24 14:54:14,525 | INFO | Upserted 333 rows.
+2025-10-24 14:54:14,525 | INFO | Processed chunk offset=3300, total so far=10981
+2025-10-24 14:54:15,626 | INFO | Upserted 329 rows.
+2025-10-24 14:54:15,627 | INFO | Processed chunk offset=3400, total so far=11310
+2025-10-24 14:54:16,601 | INFO | Upserted 311 rows.
+2025-10-24 14:54:16,601 | INFO | Processed chunk offset=3500, total so far=11621
+2025-10-24 14:54:17,518 | INFO | Upserted 343 rows.
+2025-10-24 14:54:17,519 | INFO | Processed chunk offset=3600, total so far=11964
+2025-10-24 14:54:18,441 | INFO | Upserted 332 rows.
+2025-10-24 14:54:18,442 | INFO | Processed chunk offset=3700, total so far=12296
+2025-10-24 14:54:20,248 | INFO | Upserted 320 rows.
+2025-10-24 14:54:20,249 | INFO | Processed chunk offset=3800, total so far=12616
+2025-10-24 14:54:21,110 | INFO | Upserted 308 rows.
+2025-10-24 14:54:21,110 | INFO | Processed chunk offset=3900, total so far=12924
+2025-10-24 14:54:22,129 | INFO | Upserted 337 rows.
+2025-10-24 14:54:22,129 | INFO | Processed chunk offset=4000, total so far=13261
+2025-10-24 14:54:23,149 | INFO | Upserted 313 rows.
+2025-10-24 14:54:23,149 | INFO | Processed chunk offset=4100, total so far=13574
+2025-10-24 14:54:24,298 | INFO | Upserted 319 rows.
+2025-10-24 14:54:24,299 | INFO | Processed chunk offset=4200, total so far=13893
+2025-10-24 14:54:25,210 | INFO | Upserted 315 rows.
+2025-10-24 14:54:25,211 | INFO | Processed chunk offset=4300, total so far=14208
+2025-10-24 14:54:26,270 | INFO | Upserted 315 rows.
+2025-10-24 14:54:26,271 | INFO | Processed chunk offset=4400, total so far=14523
+2025-10-24 14:54:28,774 | INFO | Upserted 324 rows.
+2025-10-24 14:54:28,775 | INFO | Processed chunk offset=4500, total so far=14847
+2025-10-24 14:54:30,298 | INFO | Upserted 319 rows.
+2025-10-24 14:54:30,299 | INFO | Processed chunk offset=4600, total so far=15166
+2025-10-24 14:54:31,304 | INFO | Upserted 299 rows.
+2025-10-24 14:54:31,305 | INFO | Processed chunk offset=4700, total so far=15465
+2025-10-24 14:54:32,202 | INFO | Upserted 345 rows.
+2025-10-24 14:54:32,202 | INFO | Processed chunk offset=4800, total so far=15810
+2025-10-24 14:54:33,123 | INFO | Upserted 313 rows.
+2025-10-24 14:54:33,124 | INFO | Processed chunk offset=4900, total so far=16123
+2025-10-24 14:54:34,039 | INFO | Upserted 316 rows.
+2025-10-24 14:54:34,039 | INFO | Processed chunk offset=5000, total so far=16439
+2025-10-24 14:54:34,894 | INFO | Upserted 301 rows.
+2025-10-24 14:54:34,895 | INFO | Processed chunk offset=5100, total so far=16740
+2025-10-24 14:54:35,813 | INFO | Upserted 324 rows.
+2025-10-24 14:54:35,814 | INFO | Processed chunk offset=5200, total so far=17064
+2025-10-24 14:54:36,709 | INFO | Upserted 326 rows.
+2025-10-24 14:54:36,710 | INFO | Processed chunk offset=5300, total so far=17390
+2025-10-24 14:54:37,672 | INFO | Upserted 327 rows.
+2025-10-24 14:54:37,672 | INFO | Processed chunk offset=5400, total so far=17717
+2025-10-24 14:54:38,899 | INFO | Upserted 298 rows.
+2025-10-24 14:54:38,900 | INFO | Processed chunk offset=5500, total so far=18015
+2025-10-24 14:54:39,813 | INFO | Upserted 318 rows.
+2025-10-24 14:54:39,813 | INFO | Processed chunk offset=5600, total so far=18333
+2025-10-24 14:54:40,744 | INFO | Upserted 328 rows.
+2025-10-24 14:54:40,745 | INFO | Processed chunk offset=5700, total so far=18661
+2025-10-24 14:54:41,693 | INFO | Upserted 309 rows.
+2025-10-24 14:54:41,693 | INFO | Processed chunk offset=5800, total so far=18970
+2025-10-24 14:54:43,406 | INFO | Upserted 331 rows.
+2025-10-24 14:54:43,406 | INFO | Processed chunk offset=5900, total so far=19301
+2025-10-24 14:54:44,468 | INFO | Upserted 353 rows.
+2025-10-24 14:54:44,469 | INFO | Processed chunk offset=6000, total so far=19654
+2025-10-24 14:54:45,413 | INFO | Upserted 331 rows.
+2025-10-24 14:54:45,413 | INFO | Processed chunk offset=6100, total so far=19985
+2025-10-24 14:54:46,324 | INFO | Upserted 314 rows.
+2025-10-24 14:54:46,325 | INFO | Processed chunk offset=6200, total so far=20299
+2025-10-24 14:54:47,306 | INFO | Upserted 308 rows.
+2025-10-24 14:54:47,307 | INFO | Processed chunk offset=6300, total so far=20607
+2025-10-24 14:54:48,195 | INFO | Upserted 311 rows.
+2025-10-24 14:54:48,195 | INFO | Processed chunk offset=6400, total so far=20918
+2025-10-24 14:54:49,125 | INFO | Upserted 344 rows.
+2025-10-24 14:54:49,126 | INFO | Processed chunk offset=6500, total so far=21262
+2025-10-24 14:54:50,042 | INFO | Upserted 343 rows.
+2025-10-24 14:54:50,043 | INFO | Processed chunk offset=6600, total so far=21605
+2025-10-24 14:54:50,900 | INFO | Upserted 319 rows.
+2025-10-24 14:54:50,901 | INFO | Processed chunk offset=6700, total so far=21924
+2025-10-24 14:54:51,842 | INFO | Upserted 352 rows.
+2025-10-24 14:54:51,842 | INFO | Processed chunk offset=6800, total so far=22276
+2025-10-24 14:54:52,733 | INFO | Upserted 332 rows.
+2025-10-24 14:54:52,734 | INFO | Processed chunk offset=6900, total so far=22608
+2025-10-24 14:54:53,631 | INFO | Upserted 304 rows.
+2025-10-24 14:54:53,632 | INFO | Processed chunk offset=7000, total so far=22912
+2025-10-24 14:54:54,522 | INFO | Upserted 315 rows.
+2025-10-24 14:54:54,523 | INFO | Processed chunk offset=7100, total so far=23227
+2025-10-24 14:54:55,390 | INFO | Upserted 312 rows.
+2025-10-24 14:54:55,391 | INFO | Processed chunk offset=7200, total so far=23539
+2025-10-24 14:54:56,292 | INFO | Upserted 323 rows.
+2025-10-24 14:54:56,293 | INFO | Processed chunk offset=7300, total so far=23862
+2025-10-24 14:54:57,213 | INFO | Upserted 336 rows.
+2025-10-24 14:54:57,213 | INFO | Processed chunk offset=7400, total so far=24198
+2025-10-24 14:54:58,207 | INFO | Upserted 337 rows.
+2025-10-24 14:54:58,208 | INFO | Processed chunk offset=7500, total so far=24535
+2025-10-24 14:54:59,122 | INFO | Upserted 331 rows.
+2025-10-24 14:54:59,122 | INFO | Processed chunk offset=7600, total so far=24866
+2025-10-24 14:55:00,035 | INFO | Upserted 323 rows.
+2025-10-24 14:55:00,035 | INFO | Processed chunk offset=7700, total so far=25189
+2025-10-24 14:55:01,065 | INFO | Upserted 328 rows.
+2025-10-24 14:55:01,066 | INFO | Processed chunk offset=7800, total so far=25517
+2025-10-24 14:55:02,049 | INFO | Upserted 335 rows.
+2025-10-24 14:55:02,050 | INFO | Processed chunk offset=7900, total so far=25852
+2025-10-24 14:55:02,918 | INFO | Upserted 306 rows.
+2025-10-24 14:55:02,919 | INFO | Processed chunk offset=8000, total so far=26158
+2025-10-24 14:55:03,809 | INFO | Upserted 324 rows.
+2025-10-24 14:55:03,809 | INFO | Processed chunk offset=8100, total so far=26482
+2025-10-24 14:55:04,711 | INFO | Upserted 325 rows.
+2025-10-24 14:55:04,712 | INFO | Processed chunk offset=8200, total so far=26807
+2025-10-24 14:55:05,847 | INFO | Upserted 349 rows.
+2025-10-24 14:55:05,847 | INFO | Processed chunk offset=8300, total so far=27156
+2025-10-24 14:55:06,712 | INFO | Upserted 332 rows.
+2025-10-24 14:55:06,712 | INFO | Processed chunk offset=8400, total so far=27488
+2025-10-24 14:55:07,595 | INFO | Upserted 323 rows.
+2025-10-24 14:55:07,595 | INFO | Processed chunk offset=8500, total so far=27811
+2025-10-24 14:55:08,509 | INFO | Upserted 336 rows.
+2025-10-24 14:55:08,509 | INFO | Processed chunk offset=8600, total so far=28147
+2025-10-24 14:55:09,400 | INFO | Upserted 316 rows.
+2025-10-24 14:55:09,400 | INFO | Processed chunk offset=8700, total so far=28463
+2025-10-24 14:55:10,310 | INFO | Upserted 339 rows.
+2025-10-24 14:55:10,310 | INFO | Processed chunk offset=8800, total so far=28802
+2025-10-24 14:55:11,214 | INFO | Upserted 325 rows.
+2025-10-24 14:55:11,214 | INFO | Processed chunk offset=8900, total so far=29127
+2025-10-24 14:55:12,119 | INFO | Upserted 322 rows.
+2025-10-24 14:55:12,119 | INFO | Processed chunk offset=9000, total so far=29449
+2025-10-24 14:55:13,036 | INFO | Upserted 329 rows.
+2025-10-24 14:55:13,037 | INFO | Processed chunk offset=9100, total so far=29778
+2025-10-24 14:55:13,916 | INFO | Upserted 314 rows.
+2025-10-24 14:55:13,917 | INFO | Processed chunk offset=9200, total so far=30092
+2025-10-24 14:55:14,821 | INFO | Upserted 318 rows.
+2025-10-24 14:55:14,821 | INFO | Processed chunk offset=9300, total so far=30410
+2025-10-24 14:55:15,715 | INFO | Upserted 317 rows.
+2025-10-24 14:55:15,716 | INFO | Processed chunk offset=9400, total so far=30727
+2025-10-24 14:55:16,933 | INFO | Upserted 307 rows.
+2025-10-24 14:55:16,933 | INFO | Processed chunk offset=9500, total so far=31034
+2025-10-24 14:55:17,800 | INFO | Upserted 319 rows.
+2025-10-24 14:55:17,800 | INFO | Processed chunk offset=9600, total so far=31353
+2025-10-24 14:55:18,695 | INFO | Upserted 321 rows.
+2025-10-24 14:55:18,695 | INFO | Processed chunk offset=9700, total so far=31674
+2025-10-24 14:55:19,609 | INFO | Upserted 322 rows.
+2025-10-24 14:55:19,610 | INFO | Processed chunk offset=9800, total so far=31996
+2025-10-24 14:55:20,651 | INFO | Upserted 338 rows.
+2025-10-24 14:55:20,652 | INFO | Processed chunk offset=9900, total so far=32334
+2025-10-24 14:55:20,654 | INFO | ETL finished | Mode=historical | Status=success | Duration=102.80s | Rows=32334
+2025-10-24 14:57:02,207 | INFO | ETL started in DAILY mode.
+2025-10-24 14:57:03,794 | INFO | No more data to process.
+2025-10-24 14:57:03,810 | INFO | ETL finished | Mode=daily | Status=success | Duration=1.59s | Rows=0
+2025-10-24 15:01:04,548 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-24 15:01:04,549 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 15:01:05,873 | INFO | Fetched batch: rows=100, offset=0, has_more=True
+2025-10-24 15:01:06,024 | INFO | Upserted 309 rows.
+2025-10-24 15:01:06,026 | INFO | Processed chunk; new_offset=100, total_so_far=309
+2025-10-24 15:01:06,797 | INFO | Fetched batch: rows=100, offset=100, has_more=True
+2025-10-24 15:01:06,891 | INFO | Upserted 313 rows.
+2025-10-24 15:01:06,892 | INFO | Processed chunk; new_offset=200, total_so_far=622
+2025-10-24 15:01:07,699 | INFO | Fetched batch: rows=100, offset=200, has_more=True
+2025-10-24 15:01:07,801 | INFO | Upserted 340 rows.
+2025-10-24 15:01:07,803 | INFO | Processed chunk; new_offset=300, total_so_far=962
+2025-10-24 15:01:08,362 | INFO | Fetched batch: rows=100, offset=300, has_more=True
+2025-10-24 15:01:08,444 | INFO | Upserted 316 rows.
+2025-10-24 15:01:08,446 | INFO | Processed chunk; new_offset=400, total_so_far=1278
+2025-10-24 15:01:08,976 | INFO | Fetched batch: rows=100, offset=400, has_more=True
+2025-10-24 15:01:09,070 | INFO | Upserted 318 rows.
+2025-10-24 15:01:09,072 | INFO | Processed chunk; new_offset=500, total_so_far=1596
+2025-10-24 15:01:09,562 | INFO | Fetched batch: rows=100, offset=500, has_more=True
+2025-10-24 15:01:09,655 | INFO | Upserted 322 rows.
+2025-10-24 15:01:09,657 | INFO | Processed chunk; new_offset=600, total_so_far=1918
+2025-10-24 15:01:10,390 | INFO | Fetched batch: rows=100, offset=600, has_more=True
+2025-10-24 15:01:10,496 | INFO | Upserted 329 rows.
+2025-10-24 15:01:10,498 | INFO | Processed chunk; new_offset=700, total_so_far=2247
+2025-10-24 15:01:11,066 | INFO | Fetched batch: rows=100, offset=700, has_more=True
+2025-10-24 15:01:11,187 | INFO | Upserted 319 rows.
+2025-10-24 15:01:11,189 | INFO | Processed chunk; new_offset=800, total_so_far=2566
+2025-10-24 15:01:11,765 | INFO | Fetched batch: rows=100, offset=800, has_more=True
+2025-10-24 15:01:11,852 | INFO | Upserted 317 rows.
+2025-10-24 15:01:11,854 | INFO | Processed chunk; new_offset=900, total_so_far=2883
+2025-10-24 15:01:12,378 | INFO | Fetched batch: rows=100, offset=900, has_more=True
+2025-10-24 15:01:12,459 | INFO | Upserted 312 rows.
+2025-10-24 15:01:12,460 | INFO | Processed chunk; new_offset=1000, total_so_far=3195
+2025-10-24 15:01:13,289 | INFO | Fetched batch: rows=100, offset=1000, has_more=True
+2025-10-24 15:01:13,384 | INFO | Upserted 333 rows.
+2025-10-24 15:01:13,386 | INFO | Processed chunk; new_offset=1100, total_so_far=3528
+2025-10-24 15:01:13,975 | INFO | Fetched batch: rows=100, offset=1100, has_more=True
+2025-10-24 15:01:14,065 | INFO | Upserted 318 rows.
+2025-10-24 15:01:14,066 | INFO | Processed chunk; new_offset=1200, total_so_far=3846
+2025-10-24 15:01:14,571 | INFO | Fetched batch: rows=100, offset=1200, has_more=True
+2025-10-24 15:01:14,659 | INFO | Upserted 321 rows.
+2025-10-24 15:01:14,661 | INFO | Processed chunk; new_offset=1300, total_so_far=4167
+2025-10-24 15:01:15,169 | INFO | Fetched batch: rows=100, offset=1300, has_more=True
+2025-10-24 15:01:15,294 | INFO | Upserted 333 rows.
+2025-10-24 15:01:15,295 | INFO | Processed chunk; new_offset=1400, total_so_far=4500
+2025-10-24 15:01:15,866 | INFO | Fetched batch: rows=100, offset=1400, has_more=True
+2025-10-24 15:01:15,945 | INFO | Upserted 305 rows.
+2025-10-24 15:01:15,947 | INFO | Processed chunk; new_offset=1500, total_so_far=4805
+2025-10-24 15:01:16,463 | INFO | Fetched batch: rows=100, offset=1500, has_more=True
+2025-10-24 15:01:16,556 | INFO | Upserted 328 rows.
+2025-10-24 15:01:16,558 | INFO | Processed chunk; new_offset=1600, total_so_far=5133
+2025-10-24 15:01:17,167 | INFO | Fetched batch: rows=100, offset=1600, has_more=True
+2025-10-24 15:01:17,254 | INFO | Upserted 320 rows.
+2025-10-24 15:01:17,256 | INFO | Processed chunk; new_offset=1700, total_so_far=5453
+2025-10-24 15:01:17,875 | INFO | Fetched batch: rows=100, offset=1700, has_more=True
+2025-10-24 15:01:17,960 | INFO | Upserted 305 rows.
+2025-10-24 15:01:17,962 | INFO | Processed chunk; new_offset=1800, total_so_far=5758
+2025-10-24 15:01:18,704 | INFO | Fetched batch: rows=100, offset=1800, has_more=True
+2025-10-24 15:01:18,793 | INFO | Upserted 331 rows.
+2025-10-24 15:01:18,796 | INFO | Processed chunk; new_offset=1900, total_so_far=6089
+2025-10-24 15:01:19,379 | INFO | Fetched batch: rows=100, offset=1900, has_more=True
+2025-10-24 15:01:19,469 | INFO | Upserted 328 rows.
+2025-10-24 15:01:19,471 | INFO | Processed chunk; new_offset=2000, total_so_far=6417
+2025-10-24 15:01:19,972 | INFO | Fetched batch: rows=100, offset=2000, has_more=True
+2025-10-24 15:01:20,062 | INFO | Upserted 318 rows.
+2025-10-24 15:01:20,064 | INFO | Processed chunk; new_offset=2100, total_so_far=6735
+2025-10-24 15:01:20,568 | INFO | Fetched batch: rows=100, offset=2100, has_more=True
+2025-10-24 15:01:20,667 | INFO | Upserted 312 rows.
+2025-10-24 15:01:20,669 | INFO | Processed chunk; new_offset=2200, total_so_far=7047
+2025-10-24 15:01:21,391 | INFO | Fetched batch: rows=100, offset=2200, has_more=True
+2025-10-24 15:01:21,471 | INFO | Upserted 335 rows.
+2025-10-24 15:01:21,472 | INFO | Processed chunk; new_offset=2300, total_so_far=7382
+2025-10-24 15:01:21,965 | INFO | Fetched batch: rows=100, offset=2300, has_more=True
+2025-10-24 15:01:22,056 | INFO | Upserted 318 rows.
+2025-10-24 15:01:22,058 | INFO | Processed chunk; new_offset=2400, total_so_far=7700
+2025-10-24 15:01:22,840 | INFO | Fetched batch: rows=100, offset=2400, has_more=True
+2025-10-24 15:01:22,943 | INFO | Upserted 332 rows.
+2025-10-24 15:01:22,945 | INFO | Processed chunk; new_offset=2500, total_so_far=8032
+2025-10-24 15:01:23,467 | INFO | Fetched batch: rows=100, offset=2500, has_more=True
+2025-10-24 15:01:23,547 | INFO | Upserted 317 rows.
+2025-10-24 15:01:23,548 | INFO | Processed chunk; new_offset=2600, total_so_far=8349
+2025-10-24 15:01:24,289 | INFO | Fetched batch: rows=100, offset=2600, has_more=True
+2025-10-24 15:01:24,381 | INFO | Upserted 337 rows.
+2025-10-24 15:01:24,383 | INFO | Processed chunk; new_offset=2700, total_so_far=8686
+2025-10-24 15:01:25,186 | INFO | Fetched batch: rows=100, offset=2700, has_more=True
+2025-10-24 15:01:25,267 | INFO | Upserted 333 rows.
+2025-10-24 15:01:25,269 | INFO | Processed chunk; new_offset=2800, total_so_far=9019
+2025-10-24 15:01:26,091 | INFO | Fetched batch: rows=100, offset=2800, has_more=True
+2025-10-24 15:01:26,219 | INFO | Upserted 345 rows.
+2025-10-24 15:01:26,221 | INFO | Processed chunk; new_offset=2900, total_so_far=9364
+2025-10-24 15:01:26,785 | INFO | Fetched batch: rows=100, offset=2900, has_more=True
+2025-10-24 15:01:26,880 | INFO | Upserted 327 rows.
+2025-10-24 15:01:26,882 | INFO | Processed chunk; new_offset=3000, total_so_far=9691
+2025-10-24 15:01:27,460 | INFO | Fetched batch: rows=100, offset=3000, has_more=True
+2025-10-24 15:01:27,556 | INFO | Upserted 329 rows.
+2025-10-24 15:01:27,558 | INFO | Processed chunk; new_offset=3100, total_so_far=10020
+2025-10-24 15:01:28,068 | INFO | Fetched batch: rows=100, offset=3100, has_more=True
+2025-10-24 15:01:28,164 | INFO | Upserted 321 rows.
+2025-10-24 15:01:28,165 | INFO | Processed chunk; new_offset=3200, total_so_far=10341
+2025-10-24 15:01:28,668 | INFO | Fetched batch: rows=100, offset=3200, has_more=True
+2025-10-24 15:01:28,757 | INFO | Upserted 307 rows.
+2025-10-24 15:01:28,759 | INFO | Processed chunk; new_offset=3300, total_so_far=10648
+2025-10-24 15:01:29,494 | INFO | Fetched batch: rows=100, offset=3300, has_more=True
+2025-10-24 15:01:29,600 | INFO | Upserted 333 rows.
+2025-10-24 15:01:29,602 | INFO | Processed chunk; new_offset=3400, total_so_far=10981
+2025-10-24 15:01:30,426 | INFO | Fetched batch: rows=100, offset=3400, has_more=True
+2025-10-24 15:01:30,522 | INFO | Upserted 329 rows.
+2025-10-24 15:01:30,524 | INFO | Processed chunk; new_offset=3500, total_so_far=11310
+2025-10-24 15:01:31,083 | INFO | Fetched batch: rows=100, offset=3500, has_more=True
+2025-10-24 15:01:31,169 | INFO | Upserted 311 rows.
+2025-10-24 15:01:31,171 | INFO | Processed chunk; new_offset=3600, total_so_far=11621
+2025-10-24 15:01:31,929 | INFO | Fetched batch: rows=100, offset=3600, has_more=True
+2025-10-24 15:01:32,014 | INFO | Upserted 343 rows.
+2025-10-24 15:01:32,016 | INFO | Processed chunk; new_offset=3700, total_so_far=11964
+2025-10-24 15:01:32,793 | INFO | Fetched batch: rows=100, offset=3700, has_more=True
+2025-10-24 15:01:32,888 | INFO | Upserted 332 rows.
+2025-10-24 15:01:32,890 | INFO | Processed chunk; new_offset=3800, total_so_far=12296
+2025-10-24 15:01:33,467 | INFO | Fetched batch: rows=100, offset=3800, has_more=True
+2025-10-24 15:01:33,542 | INFO | Upserted 320 rows.
+2025-10-24 15:01:33,544 | INFO | Processed chunk; new_offset=3900, total_so_far=12616
+2025-10-24 15:01:34,069 | INFO | Fetched batch: rows=100, offset=3900, has_more=True
+2025-10-24 15:01:34,162 | INFO | Upserted 308 rows.
+2025-10-24 15:01:34,164 | INFO | Processed chunk; new_offset=4000, total_so_far=12924
+2025-10-24 15:01:34,990 | INFO | Fetched batch: rows=100, offset=4000, has_more=True
+2025-10-24 15:01:35,088 | INFO | Upserted 337 rows.
+2025-10-24 15:01:35,089 | INFO | Processed chunk; new_offset=4100, total_so_far=13261
+2025-10-24 15:01:35,669 | INFO | Fetched batch: rows=100, offset=4100, has_more=True
+2025-10-24 15:01:35,756 | INFO | Upserted 313 rows.
+2025-10-24 15:01:35,758 | INFO | Processed chunk; new_offset=4200, total_so_far=13574
+2025-10-24 15:01:36,486 | INFO | Fetched batch: rows=100, offset=4200, has_more=True
+2025-10-24 15:01:36,578 | INFO | Upserted 319 rows.
+2025-10-24 15:01:36,579 | INFO | Processed chunk; new_offset=4300, total_so_far=13893
+2025-10-24 15:01:37,070 | INFO | Fetched batch: rows=100, offset=4300, has_more=True
+2025-10-24 15:01:37,158 | INFO | Upserted 315 rows.
+2025-10-24 15:01:37,159 | INFO | Processed chunk; new_offset=4400, total_so_far=14208
+2025-10-24 15:01:37,872 | INFO | Fetched batch: rows=100, offset=4400, has_more=True
+2025-10-24 15:01:37,968 | INFO | Upserted 315 rows.
+2025-10-24 15:01:37,970 | INFO | Processed chunk; new_offset=4500, total_so_far=14523
+2025-10-24 15:01:38,468 | INFO | Fetched batch: rows=100, offset=4500, has_more=True
+2025-10-24 15:01:38,557 | INFO | Upserted 324 rows.
+2025-10-24 15:01:38,559 | INFO | Processed chunk; new_offset=4600, total_so_far=14847
+2025-10-24 15:01:39,063 | INFO | Fetched batch: rows=100, offset=4600, has_more=True
+2025-10-24 15:01:39,159 | INFO | Upserted 319 rows.
+2025-10-24 15:01:39,161 | INFO | Processed chunk; new_offset=4700, total_so_far=15166
+2025-10-24 15:01:39,678 | INFO | Fetched batch: rows=100, offset=4700, has_more=True
+2025-10-24 15:01:39,777 | INFO | Upserted 299 rows.
+2025-10-24 15:01:39,779 | INFO | Processed chunk; new_offset=4800, total_so_far=15465
+2025-10-24 15:01:40,604 | INFO | Fetched batch: rows=100, offset=4800, has_more=True
+2025-10-24 15:01:40,758 | INFO | Upserted 345 rows.
+2025-10-24 15:01:40,761 | INFO | Processed chunk; new_offset=4900, total_so_far=15810
+2025-10-24 15:01:41,276 | INFO | Fetched batch: rows=100, offset=4900, has_more=True
+2025-10-24 15:01:41,367 | INFO | Upserted 313 rows.
+2025-10-24 15:01:41,370 | INFO | Processed chunk; new_offset=5000, total_so_far=16123
+2025-10-24 15:01:41,870 | INFO | Fetched batch: rows=100, offset=5000, has_more=True
+2025-10-24 15:01:41,971 | INFO | Upserted 316 rows.
+2025-10-24 15:01:41,973 | INFO | Processed chunk; new_offset=5100, total_so_far=16439
+2025-10-24 15:01:42,563 | INFO | Fetched batch: rows=100, offset=5100, has_more=True
+2025-10-24 15:01:42,652 | INFO | Upserted 301 rows.
+2025-10-24 15:01:42,654 | INFO | Processed chunk; new_offset=5200, total_so_far=16740
+2025-10-24 15:01:43,170 | INFO | Fetched batch: rows=100, offset=5200, has_more=True
+2025-10-24 15:01:43,282 | INFO | Upserted 324 rows.
+2025-10-24 15:01:43,285 | INFO | Processed chunk; new_offset=5300, total_so_far=17064
+2025-10-24 15:01:43,865 | INFO | Fetched batch: rows=100, offset=5300, has_more=True
+2025-10-24 15:01:43,963 | INFO | Upserted 326 rows.
+2025-10-24 15:01:43,966 | INFO | Processed chunk; new_offset=5400, total_so_far=17390
+2025-10-24 15:01:44,478 | INFO | Fetched batch: rows=100, offset=5400, has_more=True
+2025-10-24 15:01:44,584 | INFO | Upserted 327 rows.
+2025-10-24 15:01:44,586 | INFO | Processed chunk; new_offset=5500, total_so_far=17717
+2025-10-24 15:01:45,176 | INFO | Fetched batch: rows=100, offset=5500, has_more=True
+2025-10-24 15:01:45,274 | INFO | Upserted 298 rows.
+2025-10-24 15:01:45,276 | INFO | Processed chunk; new_offset=5600, total_so_far=18015
+2025-10-24 15:01:45,776 | INFO | Fetched batch: rows=100, offset=5600, has_more=True
+2025-10-24 15:01:45,872 | INFO | Upserted 318 rows.
+2025-10-24 15:01:45,874 | INFO | Processed chunk; new_offset=5700, total_so_far=18333
+2025-10-24 15:01:46,694 | INFO | Fetched batch: rows=100, offset=5700, has_more=True
+2025-10-24 15:01:46,795 | INFO | Upserted 328 rows.
+2025-10-24 15:01:46,797 | INFO | Processed chunk; new_offset=5800, total_so_far=18661
+2025-10-24 15:01:47,379 | INFO | Fetched batch: rows=100, offset=5800, has_more=True
+2025-10-24 15:01:47,455 | INFO | Upserted 309 rows.
+2025-10-24 15:01:47,457 | INFO | Processed chunk; new_offset=5900, total_so_far=18970
+2025-10-24 15:01:48,208 | INFO | Fetched batch: rows=100, offset=5900, has_more=True
+2025-10-24 15:01:48,300 | INFO | Upserted 331 rows.
+2025-10-24 15:01:48,302 | INFO | Processed chunk; new_offset=6000, total_so_far=19301
+2025-10-24 15:01:49,094 | INFO | Fetched batch: rows=100, offset=6000, has_more=True
+2025-10-24 15:01:49,195 | INFO | Upserted 353 rows.
+2025-10-24 15:01:49,197 | INFO | Processed chunk; new_offset=6100, total_so_far=19654
+2025-10-24 15:01:49,765 | INFO | Fetched batch: rows=100, offset=6100, has_more=True
+2025-10-24 15:01:49,863 | INFO | Upserted 331 rows.
+2025-10-24 15:01:49,865 | INFO | Processed chunk; new_offset=6200, total_so_far=19985
+2025-10-24 15:01:50,373 | INFO | Fetched batch: rows=100, offset=6200, has_more=True
+2025-10-24 15:01:50,474 | INFO | Upserted 314 rows.
+2025-10-24 15:01:50,476 | INFO | Processed chunk; new_offset=6300, total_so_far=20299
+2025-10-24 15:01:51,066 | INFO | Fetched batch: rows=100, offset=6300, has_more=True
+2025-10-24 15:01:51,140 | INFO | Upserted 308 rows.
+2025-10-24 15:01:51,142 | INFO | Processed chunk; new_offset=6400, total_so_far=20607
+2025-10-24 15:01:51,681 | INFO | Fetched batch: rows=100, offset=6400, has_more=True
+2025-10-24 15:01:51,779 | INFO | Upserted 311 rows.
+2025-10-24 15:01:51,781 | INFO | Processed chunk; new_offset=6500, total_so_far=20918
+2025-10-24 15:01:52,612 | INFO | Fetched batch: rows=100, offset=6500, has_more=True
+2025-10-24 15:01:52,706 | INFO | Upserted 344 rows.
+2025-10-24 15:01:52,708 | INFO | Processed chunk; new_offset=6600, total_so_far=21262
+2025-10-24 15:01:53,495 | INFO | Fetched batch: rows=100, offset=6600, has_more=True
+2025-10-24 15:01:53,588 | INFO | Upserted 343 rows.
+2025-10-24 15:01:53,590 | INFO | Processed chunk; new_offset=6700, total_so_far=21605
+2025-10-24 15:01:54,532 | INFO | Fetched batch: rows=100, offset=6700, has_more=True
+2025-10-24 15:01:54,607 | INFO | Upserted 319 rows.
+2025-10-24 15:01:54,609 | INFO | Processed chunk; new_offset=6800, total_so_far=21924
+2025-10-24 15:01:55,401 | INFO | Fetched batch: rows=100, offset=6800, has_more=True
+2025-10-24 15:01:55,501 | INFO | Upserted 352 rows.
+2025-10-24 15:01:55,503 | INFO | Processed chunk; new_offset=6900, total_so_far=22276
+2025-10-24 15:01:56,329 | INFO | Fetched batch: rows=100, offset=6900, has_more=True
+2025-10-24 15:01:56,435 | INFO | Upserted 332 rows.
+2025-10-24 15:01:56,437 | INFO | Processed chunk; new_offset=7000, total_so_far=22608
+2025-10-24 15:01:57,203 | INFO | Fetched batch: rows=100, offset=7000, has_more=True
+2025-10-24 15:01:57,293 | INFO | Upserted 304 rows.
+2025-10-24 15:01:57,295 | INFO | Processed chunk; new_offset=7100, total_so_far=22912
+2025-10-24 15:01:58,179 | INFO | Fetched batch: rows=100, offset=7100, has_more=True
+2025-10-24 15:01:58,265 | INFO | Upserted 315 rows.
+2025-10-24 15:01:58,267 | INFO | Processed chunk; new_offset=7200, total_so_far=23227
+2025-10-24 15:01:59,097 | INFO | Fetched batch: rows=100, offset=7200, has_more=True
+2025-10-24 15:01:59,222 | INFO | Upserted 312 rows.
+2025-10-24 15:01:59,224 | INFO | Processed chunk; new_offset=7300, total_so_far=23539
+2025-10-24 15:02:00,090 | INFO | Fetched batch: rows=100, offset=7300, has_more=True
+2025-10-24 15:02:00,177 | INFO | Upserted 323 rows.
+2025-10-24 15:02:00,179 | INFO | Processed chunk; new_offset=7400, total_so_far=23862
+2025-10-24 15:02:00,994 | INFO | Fetched batch: rows=100, offset=7400, has_more=True
+2025-10-24 15:02:01,076 | INFO | Upserted 336 rows.
+2025-10-24 15:02:01,077 | INFO | Processed chunk; new_offset=7500, total_so_far=24198
+2025-10-24 15:02:01,900 | INFO | Fetched batch: rows=100, offset=7500, has_more=True
+2025-10-24 15:02:01,989 | INFO | Upserted 337 rows.
+2025-10-24 15:02:01,991 | INFO | Processed chunk; new_offset=7600, total_so_far=24535
+2025-10-24 15:02:02,802 | INFO | Fetched batch: rows=100, offset=7600, has_more=True
+2025-10-24 15:02:02,909 | INFO | Upserted 331 rows.
+2025-10-24 15:02:02,911 | INFO | Processed chunk; new_offset=7700, total_so_far=24866
+2025-10-24 15:02:03,708 | INFO | Fetched batch: rows=100, offset=7700, has_more=True
+2025-10-24 15:02:03,787 | INFO | Upserted 323 rows.
+2025-10-24 15:02:03,789 | INFO | Processed chunk; new_offset=7800, total_so_far=25189
+2025-10-24 15:02:04,596 | INFO | Fetched batch: rows=100, offset=7800, has_more=True
+2025-10-24 15:02:04,685 | INFO | Upserted 328 rows.
+2025-10-24 15:02:04,687 | INFO | Processed chunk; new_offset=7900, total_so_far=25517
+2025-10-24 15:02:05,509 | INFO | Fetched batch: rows=100, offset=7900, has_more=True
+2025-10-24 15:02:05,591 | INFO | Upserted 335 rows.
+2025-10-24 15:02:05,593 | INFO | Processed chunk; new_offset=8000, total_so_far=25852
+2025-10-24 15:02:06,394 | INFO | Fetched batch: rows=100, offset=8000, has_more=True
+2025-10-24 15:02:06,479 | INFO | Upserted 306 rows.
+2025-10-24 15:02:06,481 | INFO | Processed chunk; new_offset=8100, total_so_far=26158
+2025-10-24 15:02:07,303 | INFO | Fetched batch: rows=100, offset=8100, has_more=True
+2025-10-24 15:02:07,385 | INFO | Upserted 324 rows.
+2025-10-24 15:02:07,387 | INFO | Processed chunk; new_offset=8200, total_so_far=26482
+2025-10-24 15:02:08,190 | INFO | Fetched batch: rows=100, offset=8200, has_more=True
+2025-10-24 15:02:08,284 | INFO | Upserted 325 rows.
+2025-10-24 15:02:08,286 | INFO | Processed chunk; new_offset=8300, total_so_far=26807
+2025-10-24 15:02:09,098 | INFO | Fetched batch: rows=100, offset=8300, has_more=True
+2025-10-24 15:02:09,196 | INFO | Upserted 349 rows.
+2025-10-24 15:02:09,198 | INFO | Processed chunk; new_offset=8400, total_so_far=27156
+2025-10-24 15:02:09,999 | INFO | Fetched batch: rows=100, offset=8400, has_more=True
+2025-10-24 15:02:10,101 | INFO | Upserted 332 rows.
+2025-10-24 15:02:10,103 | INFO | Processed chunk; new_offset=8500, total_so_far=27488
+2025-10-24 15:02:10,900 | INFO | Fetched batch: rows=100, offset=8500, has_more=True
+2025-10-24 15:02:10,986 | INFO | Upserted 323 rows.
+2025-10-24 15:02:10,988 | INFO | Processed chunk; new_offset=8600, total_so_far=27811
+2025-10-24 15:02:11,805 | INFO | Fetched batch: rows=100, offset=8600, has_more=True
+2025-10-24 15:02:11,900 | INFO | Upserted 336 rows.
+2025-10-24 15:02:11,902 | INFO | Processed chunk; new_offset=8700, total_so_far=28147
+2025-10-24 15:02:12,626 | INFO | Fetched batch: rows=100, offset=8700, has_more=True
+2025-10-24 15:02:12,706 | INFO | Upserted 316 rows.
+2025-10-24 15:02:12,708 | INFO | Processed chunk; new_offset=8800, total_so_far=28463
+2025-10-24 15:02:13,505 | INFO | Fetched batch: rows=100, offset=8800, has_more=True
+2025-10-24 15:02:13,623 | INFO | Upserted 339 rows.
+2025-10-24 15:02:13,625 | INFO | Processed chunk; new_offset=8900, total_so_far=28802
+2025-10-24 15:02:14,396 | INFO | Fetched batch: rows=100, offset=8900, has_more=True
+2025-10-24 15:02:14,514 | INFO | Upserted 325 rows.
+2025-10-24 15:02:14,516 | INFO | Processed chunk; new_offset=9000, total_so_far=29127
+2025-10-24 15:02:15,403 | INFO | Fetched batch: rows=100, offset=9000, has_more=True
+2025-10-24 15:02:15,493 | INFO | Upserted 322 rows.
+2025-10-24 15:02:15,495 | INFO | Processed chunk; new_offset=9100, total_so_far=29449
+2025-10-24 15:02:16,408 | INFO | Fetched batch: rows=100, offset=9100, has_more=True
+2025-10-24 15:02:16,512 | INFO | Upserted 329 rows.
+2025-10-24 15:02:16,513 | INFO | Processed chunk; new_offset=9200, total_so_far=29778
+2025-10-24 15:02:17,287 | INFO | Fetched batch: rows=100, offset=9200, has_more=True
+2025-10-24 15:02:17,383 | INFO | Upserted 314 rows.
+2025-10-24 15:02:17,385 | INFO | Processed chunk; new_offset=9300, total_so_far=30092
+2025-10-24 15:02:18,195 | INFO | Fetched batch: rows=100, offset=9300, has_more=True
+2025-10-24 15:02:18,295 | INFO | Upserted 318 rows.
+2025-10-24 15:02:18,296 | INFO | Processed chunk; new_offset=9400, total_so_far=30410
+2025-10-24 15:02:19,090 | INFO | Fetched batch: rows=100, offset=9400, has_more=True
+2025-10-24 15:02:19,182 | INFO | Upserted 317 rows.
+2025-10-24 15:02:19,183 | INFO | Processed chunk; new_offset=9500, total_so_far=30727
+2025-10-24 15:02:19,988 | INFO | Fetched batch: rows=100, offset=9500, has_more=True
+2025-10-24 15:02:20,078 | INFO | Upserted 307 rows.
+2025-10-24 15:02:20,080 | INFO | Processed chunk; new_offset=9600, total_so_far=31034
+2025-10-24 15:02:20,797 | INFO | Fetched batch: rows=100, offset=9600, has_more=True
+2025-10-24 15:02:20,886 | INFO | Upserted 319 rows.
+2025-10-24 15:02:20,888 | INFO | Processed chunk; new_offset=9700, total_so_far=31353
+2025-10-24 15:02:21,698 | INFO | Fetched batch: rows=100, offset=9700, has_more=True
+2025-10-24 15:02:21,818 | INFO | Upserted 321 rows.
+2025-10-24 15:02:21,820 | INFO | Processed chunk; new_offset=9800, total_so_far=31674
+2025-10-24 15:02:22,545 | INFO | Fetched batch: rows=100, offset=9800, has_more=True
+2025-10-24 15:02:22,671 | INFO | Upserted 322 rows.
+2025-10-24 15:02:22,674 | INFO | Processed chunk; new_offset=9900, total_so_far=31996
+2025-10-24 15:02:23,496 | INFO | Fetched batch: rows=100, offset=9900, has_more=False
+2025-10-24 15:02:23,622 | INFO | Upserted 338 rows.
+2025-10-24 15:02:23,625 | INFO | Processed chunk; new_offset=10000, total_so_far=32334
+2025-10-24 15:02:23,630 | INFO | ETL finished | Mode=historical | Status=success | Duration=79.08s | Rows=32334
+2025-10-24 15:03:20,322 | INFO | ETL started in DAILY mode.
+2025-10-24 15:03:20,992 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 15:03:20,992 | INFO | No more data to process.
+2025-10-24 15:03:21,010 | INFO | ETL finished | Mode=daily | Status=success | Duration=0.67s | Rows=0
+2025-10-24 15:21:04,362 | INFO | ETL started in DAILY mode.
+2025-10-24 15:21:47,684 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 15:21:47,684 | INFO | No more data to process.
+2025-10-24 15:21:47,702 | INFO | ETL finished | Mode=daily | Status=success | Duration=43.32s | Rows=0
+2025-10-24 23:45:47,180 | INFO | ETL started in DAILY mode.
+2025-10-24 23:46:39,220 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 23:46:39,221 | INFO | No more data to process.
+2025-10-24 23:46:39,228 | INFO | ETL finished | Mode=daily | Status=success | Duration=52.04s | Rows=0
+2025-10-24 23:50:52,943 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-24 23:50:52,944 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 23:50:53,616 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 23:50:53,616 | INFO | No more data to process.
+2025-10-24 23:50:53,631 | INFO | ETL finished | Mode=historical | Status=success | Duration=0.67s | Rows=0
+2025-10-24 23:51:22,815 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-24 23:51:22,816 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 23:51:23,525 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 23:51:23,526 | INFO | No more data to process.
+2025-10-24 23:51:23,530 | INFO | ETL finished | Mode=historical | Status=success | Duration=0.71s | Rows=0
+2025-10-24 23:52:51,636 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-24 23:52:51,637 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 23:52:52,766 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 23:52:52,767 | INFO | No more data to process.
+2025-10-24 23:52:52,772 | INFO | ETL finished | Mode=historical | Status=success | Duration=1.13s | Rows=0
+2025-10-24 23:57:56,573 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-24 23:57:56,573 | INFO | ETL started in HISTORICAL mode.
+2025-10-24 23:57:57,252 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-24 23:57:57,253 | INFO | No more data to process.
+2025-10-24 23:57:57,260 | INFO | ETL finished | Mode=historical | Status=success | Duration=0.68s | Rows=0
+2025-10-25 00:20:16,149 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-25 00:20:16,150 | INFO | ETL started in HISTORICAL mode.
+2025-10-25 00:20:48,408 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-25 00:20:48,408 | INFO | No more data to process.
+2025-10-25 00:20:48,420 | INFO | ETL finished | Mode=historical | Status=success | Duration=32.26s | Rows=0
+2025-10-25 00:21:34,794 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true).
+2025-10-25 00:21:34,794 | INFO | ETL started in HISTORICAL mode.
+2025-10-25 00:21:35,381 | INFO | Fetched batch: rows=0, offset=10000, has_more=False
+2025-10-25 00:21:35,382 | INFO | No more data to process.
+2025-10-25 00:21:35,396 | INFO | ETL finished | Mode=historical | Status=success | Duration=0.59s | Rows=0
+2025-10-25 00:40:21,017 | INFO | Table truncated for historical reload (HISTORICAL_TRUNCATE=true) and checkpoint reset to 0.
+2025-10-25 00:40:21,017 | INFO | ETL started in HISTORICAL mode.
+2025-10-25 00:40:53,939 | INFO | Fetched batch: rows=100, offset=0, has_more=True
+2025-10-25 00:40:54,142 | INFO | Upserted 309 rows.
+2025-10-25 00:40:54,144 | INFO | Processed chunk; new_offset=100, total_so_far=309
+2025-10-25 00:40:55,385 | INFO | Fetched batch: rows=100, offset=100, has_more=True
+2025-10-25 00:40:55,493 | INFO | Upserted 313 rows.
+2025-10-25 00:40:55,495 | INFO | Processed chunk; new_offset=200, total_so_far=622
+2025-10-25 00:40:56,366 | INFO | Fetched batch: rows=100, offset=200, has_more=True
+2025-10-25 00:40:56,459 | INFO | Upserted 340 rows.
+2025-10-25 00:40:56,461 | INFO | Processed chunk; new_offset=300, total_so_far=962
+2025-10-25 00:40:57,036 | INFO | Fetched batch: rows=100, offset=300, has_more=True
+2025-10-25 00:40:57,122 | INFO | Upserted 316 rows.
+2025-10-25 00:40:57,124 | INFO | Processed chunk; new_offset=400, total_so_far=1278
+2025-10-25 00:40:57,656 | INFO | Fetched batch: rows=100, offset=400, has_more=True
+2025-10-25 00:40:57,741 | INFO | Upserted 318 rows.
+2025-10-25 00:40:57,743 | INFO | Processed chunk; new_offset=500, total_so_far=1596
+2025-10-25 00:40:58,374 | INFO | Fetched batch: rows=100, offset=500, has_more=True
+2025-10-25 00:40:58,458 | INFO | Upserted 322 rows.
+2025-10-25 00:40:58,460 | INFO | Processed chunk; new_offset=600, total_so_far=1918
+2025-10-25 00:40:59,059 | INFO | Fetched batch: rows=100, offset=600, has_more=True
+2025-10-25 00:40:59,151 | INFO | Upserted 329 rows.
+2025-10-25 00:40:59,153 | INFO | Processed chunk; new_offset=700, total_so_far=2247
+2025-10-25 00:40:59,721 | INFO | Fetched batch: rows=100, offset=700, has_more=True
+2025-10-25 00:40:59,841 | INFO | Upserted 319 rows.
+2025-10-25 00:40:59,843 | INFO | Processed chunk; new_offset=800, total_so_far=2566
+2025-10-25 00:41:00,417 | INFO | Fetched batch: rows=100, offset=800, has_more=True
+2025-10-25 00:41:00,590 | INFO | Upserted 317 rows.
+2025-10-25 00:41:00,592 | INFO | Processed chunk; new_offset=900, total_so_far=2883
+2025-10-25 00:41:01,423 | INFO | Fetched batch: rows=100, offset=900, has_more=True
+2025-10-25 00:41:01,562 | INFO | Upserted 312 rows.
+2025-10-25 00:41:01,563 | INFO | Processed chunk; new_offset=1000, total_so_far=3195
+2025-10-25 00:41:02,450 | INFO | Fetched batch: rows=100, offset=1000, has_more=True
+2025-10-25 00:41:02,536 | INFO | Upserted 333 rows.
+2025-10-25 00:41:02,538 | INFO | Processed chunk; new_offset=1100, total_so_far=3528
+2025-10-25 00:41:03,272 | INFO | Fetched batch: rows=100, offset=1100, has_more=True
+2025-10-25 00:41:03,381 | INFO | Upserted 318 rows.
+2025-10-25 00:41:03,383 | INFO | Processed chunk; new_offset=1200, total_so_far=3846
+2025-10-25 00:41:04,300 | INFO | Fetched batch: rows=100, offset=1200, has_more=True
+2025-10-25 00:41:04,404 | INFO | Upserted 321 rows.
+2025-10-25 00:41:04,406 | INFO | Processed chunk; new_offset=1300, total_so_far=4167
+2025-10-25 00:41:05,126 | INFO | Fetched batch: rows=100, offset=1300, has_more=True
+2025-10-25 00:41:05,237 | INFO | Upserted 333 rows.
+2025-10-25 00:41:05,239 | INFO | Processed chunk; new_offset=1400, total_so_far=4500
+2025-10-25 00:41:06,153 | INFO | Fetched batch: rows=100, offset=1400, has_more=True
+2025-10-25 00:41:06,271 | INFO | Upserted 305 rows.
+2025-10-25 00:41:06,274 | INFO | Processed chunk; new_offset=1500, total_so_far=4805
+2025-10-25 00:41:07,077 | INFO | Fetched batch: rows=100, offset=1500, has_more=True
+2025-10-25 00:41:07,228 | INFO | Upserted 328 rows.
+2025-10-25 00:41:07,230 | INFO | Processed chunk; new_offset=1600, total_so_far=5133
+2025-10-25 00:41:07,948 | INFO | Fetched batch: rows=100, offset=1600, has_more=True
+2025-10-25 00:41:08,050 | INFO | Upserted 320 rows.
+2025-10-25 00:41:08,052 | INFO | Processed chunk; new_offset=1700, total_so_far=5453
+2025-10-25 00:41:08,884 | INFO | Fetched batch: rows=100, offset=1700, has_more=True
+2025-10-25 00:41:09,009 | INFO | Upserted 305 rows.
+2025-10-25 00:41:09,011 | INFO | Processed chunk; new_offset=1800, total_so_far=5758
+2025-10-25 00:41:09,777 | INFO | Fetched batch: rows=100, offset=1800, has_more=True
+2025-10-25 00:41:09,908 | INFO | Upserted 331 rows.
+2025-10-25 00:41:09,910 | INFO | Processed chunk; new_offset=1900, total_so_far=6089
+2025-10-25 00:41:10,665 | INFO | Fetched batch: rows=100, offset=1900, has_more=True
+2025-10-25 00:41:10,782 | INFO | Upserted 328 rows.
+2025-10-25 00:41:10,784 | INFO | Processed chunk; new_offset=2000, total_so_far=6417
+2025-10-25 00:41:11,416 | INFO | Fetched batch: rows=100, offset=2000, has_more=True
+2025-10-25 00:41:11,527 | INFO | Upserted 318 rows.
+2025-10-25 00:41:11,529 | INFO | Processed chunk; new_offset=2100, total_so_far=6735
+2025-10-25 00:41:12,121 | INFO | Fetched batch: rows=100, offset=2100, has_more=True
+2025-10-25 00:41:12,276 | INFO | Upserted 312 rows.
+2025-10-25 00:41:12,278 | INFO | Processed chunk; new_offset=2200, total_so_far=7047
+2025-10-25 00:41:12,970 | INFO | Fetched batch: rows=100, offset=2200, has_more=True
+2025-10-25 00:41:13,115 | INFO | Upserted 335 rows.
+2025-10-25 00:41:13,117 | INFO | Processed chunk; new_offset=2300, total_so_far=7382
+2025-10-25 00:41:13,628 | INFO | Fetched batch: rows=100, offset=2300, has_more=True
+2025-10-25 00:41:13,732 | INFO | Upserted 318 rows.
+2025-10-25 00:41:13,734 | INFO | Processed chunk; new_offset=2400, total_so_far=7700
+2025-10-25 00:41:14,334 | INFO | Fetched batch: rows=100, offset=2400, has_more=True
+2025-10-25 00:41:14,441 | INFO | Upserted 332 rows.
+2025-10-25 00:41:14,443 | INFO | Processed chunk; new_offset=2500, total_so_far=8032
+2025-10-25 00:41:15,284 | INFO | Fetched batch: rows=100, offset=2500, has_more=True
+2025-10-25 00:41:15,388 | INFO | Upserted 317 rows.
+2025-10-25 00:41:15,390 | INFO | Processed chunk; new_offset=2600, total_so_far=8349
+2025-10-25 00:41:16,175 | INFO | Fetched batch: rows=100, offset=2600, has_more=True
+2025-10-25 00:41:16,276 | INFO | Upserted 337 rows.
+2025-10-25 00:41:16,278 | INFO | Processed chunk; new_offset=2700, total_so_far=8686
+2025-10-25 00:41:16,931 | INFO | Fetched batch: rows=100, offset=2700, has_more=True
+2025-10-25 00:41:17,023 | INFO | Upserted 333 rows.
+2025-10-25 00:41:17,025 | INFO | Processed chunk; new_offset=2800, total_so_far=9019
+2025-10-25 00:41:17,772 | INFO | Fetched batch: rows=100, offset=2800, has_more=True
+2025-10-25 00:41:17,910 | INFO | Upserted 345 rows.
+2025-10-25 00:41:17,912 | INFO | Processed chunk; new_offset=2900, total_so_far=9364
+2025-10-25 00:41:18,415 | INFO | Fetched batch: rows=100, offset=2900, has_more=True
+2025-10-25 00:41:18,532 | INFO | Upserted 327 rows.
+2025-10-25 00:41:18,534 | INFO | Processed chunk; new_offset=3000, total_so_far=9691
+2025-10-25 00:41:19,381 | INFO | Fetched batch: rows=100, offset=3000, has_more=True
+2025-10-25 00:41:19,481 | INFO | Upserted 329 rows.
+2025-10-25 00:41:19,483 | INFO | Processed chunk; new_offset=3100, total_so_far=10020
+2025-10-25 00:41:20,119 | INFO | Fetched batch: rows=100, offset=3100, has_more=True
+2025-10-25 00:41:20,208 | INFO | Upserted 321 rows.
+2025-10-25 00:41:20,210 | INFO | Processed chunk; new_offset=3200, total_so_far=10341
+2025-10-25 00:41:21,038 | INFO | Fetched batch: rows=100, offset=3200, has_more=True
+2025-10-25 00:41:21,135 | INFO | Upserted 307 rows.
+2025-10-25 00:41:21,137 | INFO | Processed chunk; new_offset=3300, total_so_far=10648
+2025-10-25 00:41:22,183 | INFO | Fetched batch: rows=100, offset=3300, has_more=True
+2025-10-25 00:41:22,282 | INFO | Upserted 333 rows.
+2025-10-25 00:41:22,284 | INFO | Processed chunk; new_offset=3400, total_so_far=10981
+2025-10-25 00:41:22,920 | INFO | Fetched batch: rows=100, offset=3400, has_more=True
+2025-10-25 00:41:23,000 | INFO | Upserted 329 rows.
+2025-10-25 00:41:23,002 | INFO | Processed chunk; new_offset=3500, total_so_far=11310
+2025-10-25 00:41:23,768 | INFO | Fetched batch: rows=100, offset=3500, has_more=True
+2025-10-25 00:41:23,882 | INFO | Upserted 311 rows.
+2025-10-25 00:41:23,884 | INFO | Processed chunk; new_offset=3600, total_so_far=11621
+2025-10-25 00:41:24,539 | INFO | Fetched batch: rows=100, offset=3600, has_more=True
+2025-10-25 00:41:24,670 | INFO | Upserted 343 rows.
+2025-10-25 00:41:24,672 | INFO | Processed chunk; new_offset=3700, total_so_far=11964
+2025-10-25 00:41:25,250 | INFO | Fetched batch: rows=100, offset=3700, has_more=True
+2025-10-25 00:41:25,350 | INFO | Upserted 332 rows.
+2025-10-25 00:41:25,352 | INFO | Processed chunk; new_offset=3800, total_so_far=12296
+2025-10-25 00:41:26,168 | INFO | Fetched batch: rows=100, offset=3800, has_more=True
+2025-10-25 00:41:26,273 | INFO | Upserted 320 rows.
+2025-10-25 00:41:26,275 | INFO | Processed chunk; new_offset=3900, total_so_far=12616
+2025-10-25 00:41:26,820 | INFO | Fetched batch: rows=100, offset=3900, has_more=True
+2025-10-25 00:41:26,928 | INFO | Upserted 308 rows.
+2025-10-25 00:41:26,930 | INFO | Processed chunk; new_offset=4000, total_so_far=12924
+2025-10-25 00:41:27,534 | INFO | Fetched batch: rows=100, offset=4000, has_more=True
+2025-10-25 00:41:27,629 | INFO | Upserted 337 rows.
+2025-10-25 00:41:27,631 | INFO | Processed chunk; new_offset=4100, total_so_far=13261
+2025-10-25 00:41:28,377 | INFO | Fetched batch: rows=100, offset=4100, has_more=True
+2025-10-25 00:41:28,479 | INFO | Upserted 313 rows.
+2025-10-25 00:41:28,482 | INFO | Processed chunk; new_offset=4200, total_so_far=13574
+2025-10-25 00:41:29,032 | INFO | Fetched batch: rows=100, offset=4200, has_more=True
+2025-10-25 00:41:29,120 | INFO | Upserted 319 rows.
+2025-10-25 00:41:29,122 | INFO | Processed chunk; new_offset=4300, total_so_far=13893
+2025-10-25 00:41:29,928 | INFO | Fetched batch: rows=100, offset=4300, has_more=True
+2025-10-25 00:41:30,018 | INFO | Upserted 315 rows.
+2025-10-25 00:41:30,021 | INFO | Processed chunk; new_offset=4400, total_so_far=14208
+2025-10-25 00:41:30,631 | INFO | Fetched batch: rows=100, offset=4400, has_more=True
+2025-10-25 00:41:30,722 | INFO | Upserted 315 rows.
+2025-10-25 00:41:30,724 | INFO | Processed chunk; new_offset=4500, total_so_far=14523
+2025-10-25 00:41:31,576 | INFO | Fetched batch: rows=100, offset=4500, has_more=True
+2025-10-25 00:41:31,671 | INFO | Upserted 324 rows.
+2025-10-25 00:41:31,673 | INFO | Processed chunk; new_offset=4600, total_so_far=14847
+2025-10-25 00:41:32,233 | INFO | Fetched batch: rows=100, offset=4600, has_more=True
+2025-10-25 00:41:32,327 | INFO | Upserted 319 rows.
+2025-10-25 00:41:32,329 | INFO | Processed chunk; new_offset=4700, total_so_far=15166
+2025-10-25 00:41:32,942 | INFO | Fetched batch: rows=100, offset=4700, has_more=True
+2025-10-25 00:41:33,030 | INFO | Upserted 299 rows.
+2025-10-25 00:41:33,032 | INFO | Processed chunk; new_offset=4800, total_so_far=15465
+2025-10-25 00:41:33,524 | INFO | Fetched batch: rows=100, offset=4800, has_more=True
+2025-10-25 00:41:33,652 | INFO | Upserted 345 rows.
+2025-10-25 00:41:33,653 | INFO | Processed chunk; new_offset=4900, total_so_far=15810
+2025-10-25 00:41:34,133 | INFO | Fetched batch: rows=100, offset=4900, has_more=True
+2025-10-25 00:41:34,207 | INFO | Upserted 313 rows.
+2025-10-25 00:41:34,209 | INFO | Processed chunk; new_offset=5000, total_so_far=16123
+2025-10-25 00:41:34,976 | INFO | Fetched batch: rows=100, offset=5000, has_more=True
+2025-10-25 00:41:35,068 | INFO | Upserted 316 rows.
+2025-10-25 00:41:35,070 | INFO | Processed chunk; new_offset=5100, total_so_far=16439
+2025-10-25 00:41:35,882 | INFO | Fetched batch: rows=100, offset=5100, has_more=True
+2025-10-25 00:41:35,981 | INFO | Upserted 301 rows.
+2025-10-25 00:41:35,983 | INFO | Processed chunk; new_offset=5200, total_so_far=16740
+2025-10-25 00:41:36,517 | INFO | Fetched batch: rows=100, offset=5200, has_more=True
+2025-10-25 00:41:36,625 | INFO | Upserted 324 rows.
+2025-10-25 00:41:36,628 | INFO | Processed chunk; new_offset=5300, total_so_far=17064
+2025-10-25 00:41:37,234 | INFO | Fetched batch: rows=100, offset=5300, has_more=True
+2025-10-25 00:41:37,388 | INFO | Upserted 326 rows.
+2025-10-25 00:41:37,390 | INFO | Processed chunk; new_offset=5400, total_so_far=17390
+2025-10-25 00:41:37,926 | INFO | Fetched batch: rows=100, offset=5400, has_more=True
+2025-10-25 00:41:38,020 | INFO | Upserted 327 rows.
+2025-10-25 00:41:38,021 | INFO | Processed chunk; new_offset=5500, total_so_far=17717
+2025-10-25 00:41:38,763 | INFO | Fetched batch: rows=100, offset=5500, has_more=True
+2025-10-25 00:41:38,848 | INFO | Upserted 298 rows.
+2025-10-25 00:41:38,849 | INFO | Processed chunk; new_offset=5600, total_so_far=18015
+2025-10-25 00:41:39,672 | INFO | Fetched batch: rows=100, offset=5600, has_more=True
+2025-10-25 00:41:39,788 | INFO | Upserted 318 rows.
+2025-10-25 00:41:39,790 | INFO | Processed chunk; new_offset=5700, total_so_far=18333
+2025-10-25 00:41:40,569 | INFO | Fetched batch: rows=100, offset=5700, has_more=True
+2025-10-25 00:41:40,706 | INFO | Upserted 328 rows.
+2025-10-25 00:41:40,708 | INFO | Processed chunk; new_offset=5800, total_so_far=18661
+2025-10-25 00:41:41,231 | INFO | Fetched batch: rows=100, offset=5800, has_more=True
+2025-10-25 00:41:41,347 | INFO | Upserted 309 rows.
+2025-10-25 00:41:41,349 | INFO | Processed chunk; new_offset=5900, total_so_far=18970
+2025-10-25 00:41:42,231 | INFO | Fetched batch: rows=100, offset=5900, has_more=True
+2025-10-25 00:41:42,344 | INFO | Upserted 331 rows.
+2025-10-25 00:41:42,347 | INFO | Processed chunk; new_offset=6000, total_so_far=19301
+2025-10-25 00:41:42,922 | INFO | Fetched batch: rows=100, offset=6000, has_more=True
+2025-10-25 00:41:43,031 | INFO | Upserted 353 rows.
+2025-10-25 00:41:43,033 | INFO | Processed chunk; new_offset=6100, total_so_far=19654
+2025-10-25 00:41:43,793 | INFO | Fetched batch: rows=100, offset=6100, has_more=True
+2025-10-25 00:41:43,908 | INFO | Upserted 331 rows.
+2025-10-25 00:41:43,910 | INFO | Processed chunk; new_offset=6200, total_so_far=19985
+2025-10-25 00:41:44,671 | INFO | Fetched batch: rows=100, offset=6200, has_more=True
+2025-10-25 00:41:44,758 | INFO | Upserted 314 rows.
+2025-10-25 00:41:44,760 | INFO | Processed chunk; new_offset=6300, total_so_far=20299
+2025-10-25 00:41:45,581 | INFO | Fetched batch: rows=100, offset=6300, has_more=True
+2025-10-25 00:41:45,698 | INFO | Upserted 308 rows.
+2025-10-25 00:41:45,699 | INFO | Processed chunk; new_offset=6400, total_so_far=20607
+2025-10-25 00:41:46,573 | INFO | Fetched batch: rows=100, offset=6400, has_more=True
+2025-10-25 00:41:46,675 | INFO | Upserted 311 rows.
+2025-10-25 00:41:46,677 | INFO | Processed chunk; new_offset=6500, total_so_far=20918
+2025-10-25 00:41:47,476 | INFO | Fetched batch: rows=100, offset=6500, has_more=True
+2025-10-25 00:41:47,578 | INFO | Upserted 344 rows.
+2025-10-25 00:41:47,580 | INFO | Processed chunk; new_offset=6600, total_so_far=21262
+2025-10-25 00:41:48,378 | INFO | Fetched batch: rows=100, offset=6600, has_more=True
+2025-10-25 00:41:48,484 | INFO | Upserted 343 rows.
+2025-10-25 00:41:48,486 | INFO | Processed chunk; new_offset=6700, total_so_far=21605
+2025-10-25 00:41:49,127 | INFO | Fetched batch: rows=100, offset=6700, has_more=True
+2025-10-25 00:41:49,243 | INFO | Upserted 319 rows.
+2025-10-25 00:41:49,245 | INFO | Processed chunk; new_offset=6800, total_so_far=21924
+2025-10-25 00:41:50,070 | INFO | Fetched batch: rows=100, offset=6800, has_more=True
+2025-10-25 00:41:50,220 | INFO | Upserted 352 rows.
+2025-10-25 00:41:50,221 | INFO | Processed chunk; new_offset=6900, total_so_far=22276
+2025-10-25 00:41:50,970 | INFO | Fetched batch: rows=100, offset=6900, has_more=True
+2025-10-25 00:41:51,106 | INFO | Upserted 332 rows.
+2025-10-25 00:41:51,108 | INFO | Processed chunk; new_offset=7000, total_so_far=22608
+2025-10-25 00:41:51,614 | INFO | Fetched batch: rows=100, offset=7000, has_more=True
+2025-10-25 00:41:51,698 | INFO | Upserted 304 rows.
+2025-10-25 00:41:51,700 | INFO | Processed chunk; new_offset=7100, total_so_far=22912
+2025-10-25 00:41:52,344 | INFO | Fetched batch: rows=100, offset=7100, has_more=True
+2025-10-25 00:41:52,432 | INFO | Upserted 315 rows.
+2025-10-25 00:41:52,435 | INFO | Processed chunk; new_offset=7200, total_so_far=23227
+2025-10-25 00:41:52,930 | INFO | Fetched batch: rows=100, offset=7200, has_more=True
+2025-10-25 00:41:53,017 | INFO | Upserted 312 rows.
+2025-10-25 00:41:53,020 | INFO | Processed chunk; new_offset=7300, total_so_far=23539
+2025-10-25 00:41:53,542 | INFO | Fetched batch: rows=100, offset=7300, has_more=True
+2025-10-25 00:41:53,629 | INFO | Upserted 323 rows.
+2025-10-25 00:41:53,630 | INFO | Processed chunk; new_offset=7400, total_so_far=23862
+2025-10-25 00:41:54,377 | INFO | Fetched batch: rows=100, offset=7400, has_more=True
+2025-10-25 00:41:54,460 | INFO | Upserted 336 rows.
+2025-10-25 00:41:54,462 | INFO | Processed chunk; new_offset=7500, total_so_far=24198
+2025-10-25 00:41:55,271 | INFO | Fetched batch: rows=100, offset=7500, has_more=True
+2025-10-25 00:41:55,376 | INFO | Upserted 337 rows.
+2025-10-25 00:41:55,378 | INFO | Processed chunk; new_offset=7600, total_so_far=24535
+2025-10-25 00:41:56,041 | INFO | Fetched batch: rows=100, offset=7600, has_more=True
+2025-10-25 00:41:56,150 | INFO | Upserted 331 rows.
+2025-10-25 00:41:56,152 | INFO | Processed chunk; new_offset=7700, total_so_far=24866
+2025-10-25 00:41:56,821 | INFO | Fetched batch: rows=100, offset=7700, has_more=True
+2025-10-25 00:41:56,930 | INFO | Upserted 323 rows.
+2025-10-25 00:41:56,932 | INFO | Processed chunk; new_offset=7800, total_so_far=25189
+2025-10-25 00:41:57,681 | INFO | Fetched batch: rows=100, offset=7800, has_more=True
+2025-10-25 00:41:57,785 | INFO | Upserted 328 rows.
+2025-10-25 00:41:57,786 | INFO | Processed chunk; new_offset=7900, total_so_far=25517
+2025-10-25 00:41:58,575 | INFO | Fetched batch: rows=100, offset=7900, has_more=True
+2025-10-25 00:41:58,711 | INFO | Upserted 335 rows.
+2025-10-25 00:41:58,712 | INFO | Processed chunk; new_offset=8000, total_so_far=25852
+2025-10-25 00:41:59,321 | INFO | Fetched batch: rows=100, offset=8000, has_more=True
+2025-10-25 00:41:59,433 | INFO | Upserted 306 rows.
+2025-10-25 00:41:59,435 | INFO | Processed chunk; new_offset=8100, total_so_far=26158
+2025-10-25 00:41:59,916 | INFO | Fetched batch: rows=100, offset=8100, has_more=True
+2025-10-25 00:42:00,030 | INFO | Upserted 324 rows.
+2025-10-25 00:42:00,032 | INFO | Processed chunk; new_offset=8200, total_so_far=26482
+2025-10-25 00:42:00,529 | INFO | Fetched batch: rows=100, offset=8200, has_more=True
+2025-10-25 00:42:00,652 | INFO | Upserted 325 rows.
+2025-10-25 00:42:00,654 | INFO | Processed chunk; new_offset=8300, total_so_far=26807
+2025-10-25 00:42:01,221 | INFO | Fetched batch: rows=100, offset=8300, has_more=True
+2025-10-25 00:42:01,311 | INFO | Upserted 349 rows.
+2025-10-25 00:42:01,313 | INFO | Processed chunk; new_offset=8400, total_so_far=27156
+2025-10-25 00:42:01,821 | INFO | Fetched batch: rows=100, offset=8400, has_more=True
+2025-10-25 00:42:01,937 | INFO | Upserted 332 rows.
+2025-10-25 00:42:01,939 | INFO | Processed chunk; new_offset=8500, total_so_far=27488
+2025-10-25 00:42:02,770 | INFO | Fetched batch: rows=100, offset=8500, has_more=True
+2025-10-25 00:42:02,902 | INFO | Upserted 323 rows.
+2025-10-25 00:42:02,904 | INFO | Processed chunk; new_offset=8600, total_so_far=27811
+2025-10-25 00:42:03,671 | INFO | Fetched batch: rows=100, offset=8600, has_more=True
+2025-10-25 00:42:03,780 | INFO | Upserted 336 rows.
+2025-10-25 00:42:03,783 | INFO | Processed chunk; new_offset=8700, total_so_far=28147
+2025-10-25 00:42:04,562 | INFO | Fetched batch: rows=100, offset=8700, has_more=True
+2025-10-25 00:42:04,662 | INFO | Upserted 316 rows.
+2025-10-25 00:42:04,664 | INFO | Processed chunk; new_offset=8800, total_so_far=28463
+2025-10-25 00:42:05,222 | INFO | Fetched batch: rows=100, offset=8800, has_more=True
+2025-10-25 00:42:05,315 | INFO | Upserted 339 rows.
+2025-10-25 00:42:05,317 | INFO | Processed chunk; new_offset=8900, total_so_far=28802
+2025-10-25 00:42:05,828 | INFO | Fetched batch: rows=100, offset=8900, has_more=True
+2025-10-25 00:42:05,972 | INFO | Upserted 325 rows.
+2025-10-25 00:42:05,974 | INFO | Processed chunk; new_offset=9000, total_so_far=29127
+2025-10-25 00:42:06,619 | INFO | Fetched batch: rows=100, offset=9000, has_more=True
+2025-10-25 00:42:06,718 | INFO | Upserted 322 rows.
+2025-10-25 00:42:06,720 | INFO | Processed chunk; new_offset=9100, total_so_far=29449
+2025-10-25 00:42:07,479 | INFO | Fetched batch: rows=100, offset=9100, has_more=True
+2025-10-25 00:42:07,577 | INFO | Upserted 329 rows.
+2025-10-25 00:42:07,579 | INFO | Processed chunk; new_offset=9200, total_so_far=29778
+2025-10-25 00:42:08,217 | INFO | Fetched batch: rows=100, offset=9200, has_more=True
+2025-10-25 00:42:08,312 | INFO | Upserted 314 rows.
+2025-10-25 00:42:08,314 | INFO | Processed chunk; new_offset=9300, total_so_far=30092
+2025-10-25 00:42:08,816 | INFO | Fetched batch: rows=100, offset=9300, has_more=True
+2025-10-25 00:42:08,937 | INFO | Upserted 318 rows.
+2025-10-25 00:42:08,939 | INFO | Processed chunk; new_offset=9400, total_so_far=30410
+2025-10-25 00:42:09,433 | INFO | Fetched batch: rows=100, offset=9400, has_more=True
+2025-10-25 00:42:09,526 | INFO | Upserted 317 rows.
+2025-10-25 00:42:09,528 | INFO | Processed chunk; new_offset=9500, total_so_far=30727
+2025-10-25 00:42:10,135 | INFO | Fetched batch: rows=100, offset=9500, has_more=True
+2025-10-25 00:42:10,223 | INFO | Upserted 307 rows.
+2025-10-25 00:42:10,225 | INFO | Processed chunk; new_offset=9600, total_so_far=31034
+2025-10-25 00:42:10,980 | INFO | Fetched batch: rows=100, offset=9600, has_more=True
+2025-10-25 00:42:11,098 | INFO | Upserted 319 rows.
+2025-10-25 00:42:11,100 | INFO | Processed chunk; new_offset=9700, total_so_far=31353
+2025-10-25 00:42:11,872 | INFO | Fetched batch: rows=100, offset=9700, has_more=True
+2025-10-25 00:42:11,962 | INFO | Upserted 321 rows.
+2025-10-25 00:42:11,964 | INFO | Processed chunk; new_offset=9800, total_so_far=31674
+2025-10-25 00:42:12,769 | INFO | Fetched batch: rows=100, offset=9800, has_more=True
+2025-10-25 00:42:12,864 | INFO | Upserted 322 rows.
+2025-10-25 00:42:12,866 | INFO | Processed chunk; new_offset=9900, total_so_far=31996
+2025-10-25 00:42:13,427 | INFO | Fetched batch: rows=100, offset=9900, has_more=False
+2025-10-25 00:42:13,536 | INFO | Upserted 338 rows.
+2025-10-25 00:42:13,538 | INFO | Processed chunk; new_offset=10000, total_so_far=32334
+2025-10-25 00:42:13,542 | INFO | ETL finished | Mode=historical | Status=success | Duration=112.52s | Rows=32334

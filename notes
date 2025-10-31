@@ -1,0 +1,27 @@
+python src/etl/etl_ingest.py
+
+| Area                          | Strength                                                           | Why It Matters                                |
+| ----------------------------- | ------------------------------------------------------------------ | --------------------------------------------- |
+| **Pagination support**        | `offset`, `limit`, `has_more` handled                              | Handles 100k+ records without overloading API |
+| **Chunked upsert**            | `2000` rows per transaction                                        | Scalable, efficient DB writes                 |
+| **Upsert logic**              | `on_conflict_do_update` by `(purchase_order_id, line_item_number)` | Prevents duplicates, updates existing data    |
+| **Retry mechanism**           | `tenacity` with exponential backoff                                | Recovers from transient API errors            |
+| **Rate limiting**             | `RATE_LIMIT_DELAY`                                                 | Avoids throttling on real APIs                |
+| **Logging + Run metadata**    | `etl_run_log` table + logger                                       | Excellent observability and audit trail       |
+| **ENV-driven config**         | `.env` file for URL, DB, chunk size, mode                          | Easy to switch between mock → real API        |
+| **Mode handling**             | Daily vs. Historical                                               | Supports incremental and full loads cleanly   |
+| **Hashed idempotency column** | `source_hash`                                                      | Detects data changes per row                  |
+| **Session reuse**             | `requests.Session()`                                               | 2–3× faster network throughput                |
+
+
+
+How They Work Together During Ingestion
+Step	What Happens	Table/Function Involved
+1️⃣	ETL starts	ensure_checkpoint_table() ensures checkpoint table exists
+2️⃣	ETL checks where to resume	get_checkpoint() reads last offset
+3️⃣	Fetches chunk (limit=100)	fetch_page()
+4️⃣	Transforms + upserts chunk	transform_data(), upsert_dataframe()
+5️⃣	Updates checkpoint	save_checkpoint() with new offset
+6️⃣	Loop continues until done	Check pagination.has_more
+7️⃣	ETL completes	record_etl_run() logs job summary in etl_run_log
+8️⃣	If failure occurs	Partial progress saved, next run resumes automatically

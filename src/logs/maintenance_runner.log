@@ -1,0 +1,205 @@
+2025-10-25 02:21:09,859 | INFO | Total successful ETL runs: 11, since last maintenance: 11, threshold: 10
+2025-10-25 02:21:09,866 | ERROR | Unexpected error during maintenance: [WinError 2] The system cannot find the file specified
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src\db\maintenance_runner.py", line 112, in run_maintenance_script
+    subprocess.run(command, check=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 1554, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                             # no special security
+                             ^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+                             cwd,
+                             ^^^^
+                             startupinfo)
+                             ^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+2025-10-25 02:23:43,327 | INFO | Total successful ETL runs: 11, since last maintenance: 11, threshold: 10
+2025-10-25 02:23:43,333 | ERROR | Unexpected error during maintenance: [WinError 2] The system cannot find the file specified
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src\db\maintenance_runner.py", line 112, in run_maintenance_script
+    subprocess.run(command, check=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 1554, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                             # no special security
+                             ^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+                             cwd,
+                             ^^^^
+                             startupinfo)
+                             ^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+2025-10-25 02:29:44,922 | INFO |  Checking ETL run log for maintenance trigger...
+2025-10-25 02:29:44,974 | INFO | Total successful ETL runs: 11, since last maintenance: 11, threshold: 10
+2025-10-25 02:29:44,974 | INFO | 🧹 Maintenance threshold reached. Running maintenance SQL...
+2025-10-25 02:29:44,974 | INFO | Starting maintenance script...
+2025-10-25 02:29:44,977 | ERROR | Unexpected error during maintenance: [WinError 2] The system cannot find the file specified
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src\db\maintenance_runner.py", line 112, in run_maintenance_script
+    subprocess.run(command, check=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 554, in run
+    with Popen(*popenargs, **kwargs) as process:
+         ~~~~~^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 1039, in __init__
+    self._execute_child(args, executable, preexec_fn, close_fds,
+    ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+                        pass_fds, cwd, env,
+                        ^^^^^^^^^^^^^^^^^^^
+    ...<5 lines>...
+                        gid, gids, uid, umask,
+                        ^^^^^^^^^^^^^^^^^^^^^^
+                        start_new_session, process_group)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Nazel\AppData\Local\Programs\Python\Python313\Lib\subprocess.py", line 1554, in _execute_child
+    hp, ht, pid, tid = _winapi.CreateProcess(executable, args,
+                       ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+                             # no special security
+                             ^^^^^^^^^^^^^^^^^^^^^
+    ...<4 lines>...
+                             cwd,
+                             ^^^^
+                             startupinfo)
+                             ^^^^^^^^^^^^
+FileNotFoundError: [WinError 2] The system cannot find the file specified
+2025-10-25 02:32:58,534 | INFO |  Checking ETL run log for maintenance trigger...
+2025-10-25 02:32:58,539 | INFO | Total successful ETL runs: 11, since last maintenance: 11, threshold: 10
+2025-10-25 02:32:58,539 | INFO | 🧹 Maintenance threshold reached. Running maintenance SQL...
+2025-10-25 02:32:58,539 | INFO | Starting maintenance script (via SQLAlchemy)...
+2025-10-25 02:32:58,542 | ERROR |  Maintenance script failed: (psycopg2.errors.SyntaxError) syntax error at or near "\"
+LINE 10: \echo '🔧 Starting database maintenance...'
+         ^
+
+[SQL: -- =====================================================
+-- DATABASE PERFORMANCE MAINTENANCE SCRIPT
+-- For: Procurement SKU Frequency & Spend Analysis
+-- Author: [Your Name]
+-- Description:
+--   Keeps PostgreSQL optimized for large-scale analytics
+--   Run Weekly or Monthly in production
+-- =====================================================
+
+\echo '🔧 Starting database maintenance...'
+
+-- 1️⃣ Recompute planner statistics
+\echo '🧮 Running ANALYZE on purchase_orders and views...'
+ANALYZE purchase_orders]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.SyntaxError: syntax error at or near "\"
+LINE 10: \echo '🔧 Starting database maintenance...'
+         ^
+
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src\db\maintenance_runner.py", line 119, in run_maintenance_script
+    conn.execute(text(stmt))
+    ~~~~~~~~~~~~^^^^^^^^^^^^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1419, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\sql\elements.py", line 526, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1641, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<8 lines>...
+        cache_hit=cache_hit,
+    )
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1846, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1986, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 2355, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\base.py", line 1967, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\venv\Lib\site-packages\sqlalchemy\engine\default.py", line 951, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+sqlalchemy.exc.ProgrammingError: (psycopg2.errors.SyntaxError) syntax error at or near "\"
+LINE 10: \echo '🔧 Starting database maintenance...'
+         ^
+
+[SQL: -- =====================================================
+-- DATABASE PERFORMANCE MAINTENANCE SCRIPT
+-- For: Procurement SKU Frequency & Spend Analysis
+-- Author: [Your Name]
+-- Description:
+--   Keeps PostgreSQL optimized for large-scale analytics
+--   Run Weekly or Monthly in production
+-- =====================================================
+
+\echo '🔧 Starting database maintenance...'
+
+-- 1️⃣ Recompute planner statistics
+\echo '🧮 Running ANALYZE on purchase_orders and views...'
+ANALYZE purchase_orders]
+(Background on this error at: https://sqlalche.me/e/20/f405)
+2025-10-25 02:33:16,071 | INFO |  Checking ETL run log for maintenance trigger...
+2025-10-25 02:33:16,076 | INFO | Total successful ETL runs: 11, since last maintenance: 0, threshold: 10
+2025-10-25 02:33:16,076 | INFO |  Maintenance not needed yet.
