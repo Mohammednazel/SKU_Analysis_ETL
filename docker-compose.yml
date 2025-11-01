@@ -1,0 +1,42 @@
+version: "3.9"
+services:
+  postgres:
+    image: postgres:16
+    container_name: procurementdb
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Nazel@123
+      POSTGRES_DB: procurementdb
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+      - ./docker-init:/docker-entrypoint-initdb.d
+    ports:
+      - "5432:5432"
+
+  api:
+    build: .
+    container_name: procurement_api
+    depends_on:
+      - postgres
+    restart: unless-stopped
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    command: ["python", "run_api.py"]
+
+
+  etl:
+    build: .
+    container_name: procurement_etl
+    depends_on:
+      - postgres
+    restart: on-failure
+    env_file:
+      - .env
+    # Run historical once, or schedule externally later
+    command: ["python", "src/etl/etl_ingest_resilient.py"]
+
+volumes:
+  pg_data:

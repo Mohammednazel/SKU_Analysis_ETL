@@ -1,0 +1,90 @@
+.env
+.env.secrets
+
+
+# -----------------------------
+# Python
+# -----------------------------
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+*.egg-info/
+*.egg
+build/
+dist/
+.eggs/
+
+# -----------------------------
+# Virtual Environments
+# -----------------------------
+venv/
+.env/
+.env.* 
+*.env.backup
+*.env.local
+
+# -----------------------------
+# Logs & Temp
+# -----------------------------
+logs/
+*.log
+*.tmp
+runlocks/
+.DS_Store
+
+# -----------------------------
+# IDE / Editor
+# -----------------------------
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# -----------------------------
+# Docker
+# -----------------------------
+*.pid
+*.seed
+*.bak
+*.tar
+docker-compose.override.yml
+*.db
+/data/
+pg_data/
+postgres_data/
+*.sqlite
+
+# -----------------------------
+# Tests / Cache
+# -----------------------------
+.cache/
+.tox/
+pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# -----------------------------
+# Compiled notebooks or docs
+# -----------------------------
+*.ipynb_checkpoints
+docs/_build/
+site/
+
+# -----------------------------
+# Sensitive Configs
+# -----------------------------
+secrets.json
+*.pem
+*.crt
+*.key
+
+# -----------------------------
+# OS-specific
+# -----------------------------
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/

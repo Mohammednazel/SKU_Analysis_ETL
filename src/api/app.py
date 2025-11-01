@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
-from dotenv import load_dotenv
+
 
 # Add project root to sys.path so imports work regardless of entrypoint
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -16,10 +16,14 @@ from api.middlewares.error_handler import ErrorHandlerMiddleware
 from api.utils_logger import setup_json_logging
 from routes.instant import router as instant_router
 
+
+from dotenv import load_dotenv
+load_dotenv()
+
 # -------------------------------------------------
 # Environment & Logging Setup
 # -------------------------------------------------
-load_dotenv()
+
 
 # Initialize structured JSON logging
 setup_json_logging()
