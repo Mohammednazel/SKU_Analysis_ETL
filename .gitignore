@@ -24,7 +24,8 @@ venv/
 .env.* 
 *.env.backup
 *.env.local
-
+# ...BUT do NOT ignore the example file
+!.env.example
 # -----------------------------
 # Logs & Temp
 # -----------------------------
