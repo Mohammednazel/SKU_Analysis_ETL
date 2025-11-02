@@ -1,3 +1,5 @@
+# API endpoints powered by materialized views
+
 from fastapi import APIRouter, Depends, Response, Request, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -185,4 +187,67 @@ def pgroup_top(
     payload = {"data": data, "meta": {"limit": limit, "offset": offset, "count": total}}
     etag = make_etag({"path": str(request.url.path), "query": dict(request.query_params), "total": total})
     set_cache_headers(response, etag, max_age=120)
+    return payload
+
+
+# -------------------------------------------------
+# KPI Summary (cached, ultra-fast)
+# -------------------------------------------------
+@router.get("/kpi")
+def get_kpi_summary(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session)
+):
+    """
+    Returns global KPI metrics from mv_kpi_summary.
+    Uses in-memory caching + ETag for instant load.
+    """
+    cache_key = "global_kpi_summary"
+    cached = get_cached(cache_key)
+    if cached:
+        response.headers["X-Cache-Hit"] = "true"
+        return cached
+
+    # Query precomputed KPI summary
+    row = db.execute(text("SELECT * FROM mv_kpi_summary;")).mappings().first()
+    if not row:
+        return {"message": "KPI summary not found"}
+
+    result = dict(row)
+    result["last_refresh_time"] = (
+        result["last_refresh_time"].strftime("%Y-%m-%d %H:%M:%S")
+        if result.get("last_refresh_time")
+        else None
+    )
+
+    # Prepare payload
+    payload = {
+        "meta": {
+            "source": "mv_kpi_summary",
+            "refreshed_at": result["last_refresh_time"],
+        },
+        "data": {
+            "total_pos": result.get("total_pos", 0),
+            "total_skus": result.get("total_skus", 0),
+            "total_suppliers": result.get("total_suppliers", 0),
+            "total_spend": float(result.get("total_spend", 0)),
+            "total_quantity": float(result.get("total_quantity", 0)),
+            "avg_unit_price_weighted": float(result.get("avg_unit_price_weighted", 0)),
+            "avg_order_value": float(result.get("avg_order_value", 0)),
+            "spend_per_supplier": float(result.get("spend_per_supplier", 0)),
+            "spend_per_sku": float(result.get("spend_per_sku", 0)),
+            "spend_variability_ratio": float(result.get("spend_variability_ratio", 0)),
+            "last_po_date": result.get("last_po_date"),
+        },
+    }
+
+    # Cache results in-memory
+    cache_result(cache_key, payload, ttl=300)  # Cache for 5 mins
+    response.headers["X-Cache-Hit"] = "false"
+
+    # ETag for client-side caching
+    etag = make_etag({"path": str(request.url.path), "timestamp": result["last_refresh_time"]})
+    set_cache_headers(response, etag, max_age=300)
+
     return payload

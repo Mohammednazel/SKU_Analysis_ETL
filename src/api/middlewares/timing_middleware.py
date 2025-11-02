@@ -1,3 +1,5 @@
+# Tracks request performance
+
 import time
 import logging
 from starlette.middleware.base import BaseHTTPMiddleware

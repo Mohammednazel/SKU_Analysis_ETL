@@ -1,3 +1,5 @@
+# Custom global error middleware
+
 import traceback
 import uuid
 from fastapi import Request, Response

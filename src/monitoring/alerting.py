@@ -1,3 +1,5 @@
+# Email alert system (failures, slow jobs)
+
 # src/monitoring/alerting.py
 import os
 import smtplib

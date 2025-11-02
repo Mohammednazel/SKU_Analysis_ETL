@@ -1,91 +1,157 @@
+# ======================================================================
+# 🌍 Environment & Secrets
+# ======================================================================
 .env
+.env.*
 .env.secrets
+*.env.backup
+*.env.local
+.notes
+# Keep sample environment files for reference
+!.env.example
 
-
-# -----------------------------
-# Python
-# -----------------------------
+# ======================================================================
+# 🐍 Python Bytecode & Builds
+# ======================================================================
 __pycache__/
 *.py[cod]
+*$py.class
 *.pyo
 *.pyd
 *.so
-*.egg-info/
 *.egg
+*.egg-info/
+.eggs/
 build/
 dist/
-.eggs/
+develop-eggs/
+.installed.cfg
 
-# -----------------------------
-# Virtual Environments
-# -----------------------------
-venv/
-.env/
-.env.* 
-*.env.backup
-*.env.local
-# ...BUT do NOT ignore the example file
-!.env.example
-# -----------------------------
-# Logs & Temp
-# -----------------------------
-logs/
-*.log
-*.tmp
-runlocks/
-.DS_Store
+# ======================================================================
+# 🧪 Testing & Coverage
+# ======================================================================
+.pytest_cache/
+.tox/
+.nox/
+coverage.xml
+.coverage
+htmlcov/
+.cache/
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
 
-# -----------------------------
-# IDE / Editor
-# -----------------------------
-.vscode/
-.idea/
-*.sublime-workspace
-*.sublime-project
+# ======================================================================
+# 💾 Data / Database / Generated Files
+# ======================================================================
+*.db
+*.sqlite
+pg_data/
+postgres_data/
+data/
+tmp/
+*.csv
+*.xlsx
+*.parquet
 
-# -----------------------------
-# Docker
-# -----------------------------
+# ======================================================================
+# 🐳 Docker
+# ======================================================================
+docker-compose.override.yml
 *.pid
 *.seed
 *.bak
 *.tar
-docker-compose.override.yml
-*.db
-/data/
-pg_data/
-postgres_data/
-*.sqlite
+*.tgz
+*.gz
 
-# -----------------------------
-# Tests / Cache
-# -----------------------------
-.cache/
-.tox/
-pytest_cache/
-.coverage
-coverage.xml
-htmlcov/
+# ======================================================================
+# 📜 Logs & Temp Files
+# ======================================================================
+logs/
+*.log
+*.tmp
+*.out
+*.err
+runlocks/
+nohup.out
 
-# -----------------------------
-# Compiled notebooks or docs
-# -----------------------------
-*.ipynb_checkpoints
+# ======================================================================
+# 🧑‍💻 IDE / Editor / Tooling
+# ======================================================================
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+*.code-workspace
+
+# Jupyter / Notebooks
+.ipynb_checkpoints/
+notebooks/.ipynb_checkpoints/
+
+# ======================================================================
+# 📚 Documentation & Build Artifacts
+# ======================================================================
 docs/_build/
 site/
+*.pdf
+*.docx
+*.html
 
-# -----------------------------
-# Sensitive Configs
-# -----------------------------
+# ======================================================================
+# 🔒 Certificates / Keys / Secrets
+# ======================================================================
 secrets.json
 *.pem
 *.crt
+*.cer
 *.key
+*.p12
 
-# -----------------------------
-# OS-specific
-# -----------------------------
+# ======================================================================
+# 💻 OS-specific Junk Files
+# ======================================================================
+.DS_Store
 Thumbs.db
 ehthumbs.db
 desktop.ini
 $RECYCLE.BIN/
+Icon?
+.Spotlight-V100
+.Trashes
+
+# ======================================================================
+# 🗄️ Project-specific (Custom)
+# ======================================================================
+# Archive folder (old dev scripts not needed in repo)
+archive/
+# Optional local experiment notebooks or datasets
+experiments/
+sandbox/
+
+
+# ======================================================================
+# 🧩 Project-Specific Ignored Files (non-production)
+# ======================================================================
+
+# Logs & runtime traces
+logs/
+*.log
+*.out
+*.err
+
+# Local-only test scripts
+test.py
+sandbox/
+experiments/
+archive/
+
+# Temporary or local-only scripts
+src/etl/etl_ingest.py
+src/monitoring/test_alerting.py
+
+# Cache or debug files
+__debug__/
+*.prof
+*.trace

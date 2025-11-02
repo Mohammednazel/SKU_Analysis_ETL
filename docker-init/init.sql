@@ -122,6 +122,28 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_pgroup_spend
 \echo '✅ Materialized views created.'
 
 
+-- Materialized View: Global KPI Summary
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_kpi_summary AS
+SELECT 
+    COUNT(DISTINCT purchase_order_id)                        AS total_pos,
+    COUNT(DISTINCT product_id)                               AS total_skus,
+    COUNT(DISTINCT supplier_id)                              AS total_suppliers,
+    COALESCE(SUM(net_value), 0)::numeric                     AS total_spend,
+    COALESCE(SUM(quantity), 0)::numeric                      AS total_quantity,
+    ROUND(COALESCE(SUM(net_value) / NULLIF(SUM(quantity), 0), 0), 2) AS avg_unit_price_weighted,
+    ROUND(COALESCE(SUM(net_value) / NULLIF(COUNT(DISTINCT purchase_order_id), 0), 0), 2) AS avg_order_value,
+    ROUND(COALESCE(SUM(net_value) / NULLIF(COUNT(DISTINCT supplier_id), 0), 0), 2) AS spend_per_supplier,
+    ROUND(COALESCE(SUM(net_value) / NULLIF(COUNT(DISTINCT product_id), 0), 0), 2) AS spend_per_sku,
+    ROUND(COALESCE(MAX(net_value) / NULLIF(MIN(net_value), 0), 1), 2)             AS spend_variability_ratio,
+    MAX(created_date)                                                             AS last_po_date,
+    now()                                                                         AS last_refresh_time
+FROM purchase_orders;
+
+-- Required for CONCURRENT REFRESH
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_kpi_summary_unique
+  ON mv_kpi_summary ((1));
+
 -- =============================
 -- 4️⃣ Snapshot Tables for MV Audits
 -- =============================

@@ -1,3 +1,5 @@
+# FastAPI main application (middleware, routes, startup)
+
 import os
 import sys
 import logging

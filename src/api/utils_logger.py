@@ -1,3 +1,5 @@
+# JSON logging configuration for API
+
 import logging
 import json
 from datetime import datetime

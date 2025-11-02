@@ -1,3 +1,5 @@
+# Launcher for FastAPI API (Uvicorn starter)
+
 """
 run_api.py — Launcher Dashboard for FastAPI API
 -----------------------------------------------

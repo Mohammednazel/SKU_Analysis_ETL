@@ -1,3 +1,5 @@
+# Detects stale or missing ETL runs
+
 import os
 from datetime import datetime, timezone, timedelta
 from sqlalchemy import create_engine, text

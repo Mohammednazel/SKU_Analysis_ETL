@@ -1,3 +1,5 @@
+-- # DB vacuum/analyze/reindex maintenance script
+
 -- =====================================================
 -- DATABASE PERFORMANCE MAINTENANCE SCRIPT
 -- For: Procurement SKU Frequency & Spend Analysis
