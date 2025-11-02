@@ -34,6 +34,9 @@ def refresh_all(concurrently: bool = True, snapshot: bool = False):
         conn.execute(text(f"REFRESH MATERIALIZED VIEW {refresh_clause}mv_sku_spend;"))
         conn.execute(text(f"REFRESH MATERIALIZED VIEW {refresh_clause}mv_supplier_monthly;"))
         conn.execute(text(f"REFRESH MATERIALIZED VIEW {refresh_clause}mv_pgroup_spend;"))
+        conn.execute(text(f"REFRESH MATERIALIZED VIEW {refresh_clause}mv_supplier_price_analysis;"))
+        conn.execute(text(f"REFRESH MATERIALIZED VIEW {refresh_clause}mv_spend_trend_monthly;"))
+        conn.execute(text(f"REFRESH MATERIALIZED VIEW {refresh_clause}mv_sku_analysis;"))
 
         # 2️⃣ KPI Summary View (may fail concurrently — fallback)
                 # 2️⃣ KPI Summary View (may fail concurrently — fallback)

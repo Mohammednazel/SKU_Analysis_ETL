@@ -251,3 +251,302 @@ def get_kpi_summary(
     set_cache_headers(response, etag, max_age=300)
 
     return payload
+
+
+# -------------------------------------------------
+# Supplier Price Analysis (avg unit price per SKU per supplier)
+# -------------------------------------------------
+@router.get("/supplier/price_analysis")
+def supplier_price_analysis(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+    supplier_id: Optional[str] = Query(None),
+    product_id: Optional[str] = Query(None),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+):
+    """
+    Analyze supplier pricing by SKU and supplier.
+    Useful for identifying supplier-level price variance.
+    """
+    conds = []
+    params = {"limit": limit, "offset": offset}
+    if supplier_id:
+        conds.append("supplier_id = :supplier_id")
+        params["supplier_id"] = supplier_id
+    if product_id:
+        conds.append("product_id = :product_id")
+        params["product_id"] = product_id
+
+    where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
+
+    total = db.execute(
+        text(f"SELECT COUNT(*) FROM mv_supplier_price_analysis {where_clause}")
+    ).scalar()
+
+    rows = db.execute(
+        text(f"""
+            SELECT supplier_id, product_id, po_count, total_qty, total_spend,
+                   avg_unit_price, last_purchase_date
+            FROM mv_supplier_price_analysis
+            {where_clause}
+            ORDER BY avg_unit_price DESC
+            LIMIT :limit OFFSET :offset
+        """),
+        params,
+    ).mappings().all()
+
+    def serialize_datetime(val):
+        if isinstance(val, datetime):
+            return val.strftime("%Y-%m-%d")
+        return val
+
+    data = [
+        {
+            **dict(r),
+            "last_purchase_date": serialize_datetime(r.get("last_purchase_date")),
+        }
+        for r in rows
+    ]
+    payload = {
+        "data": data,
+        "meta": {"limit": limit, "offset": offset, "count": total},
+    }
+
+    etag = make_etag(
+        {"path": str(request.url.path), "query": dict(request.query_params), "total": total}
+    )
+    set_cache_headers(response, etag, max_age=120)
+    return payload
+
+
+# -------------------------------------------------
+# Spend Trend / Monthly (all suppliers)
+# -------------------------------------------------
+@router.get("/spend/trend")
+def spend_trend_monthly(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+):
+    """
+    Returns total spend trend by month for all suppliers.
+    Ideal for line chart visualizations.
+    """
+    rows = db.execute(
+        text("""
+            SELECT month, total_spend, total_qty, total_pos
+            FROM mv_spend_trend_monthly
+            ORDER BY month
+        """)
+    ).mappings().all()
+
+    data = [
+        {
+            "month": r["month"].strftime("%Y-%m") if r.get("month") else None,
+            "total_spend": float(r["total_spend"] or 0),
+            "total_qty": float(r["total_qty"] or 0),
+            "total_pos": int(r["total_pos"] or 0),
+        }
+        for r in rows
+    ]
+    payload = {"data": data, "count": len(data)}
+
+    etag = make_etag(
+        {"path": str(request.url.path), "count": len(data), "last": data[-1] if data else None}
+    )
+    set_cache_headers(response, etag, max_age=300)
+    return payload
+
+
+# -------------------------------------------------
+# Helpers: pagination validation (page + page_size)
+# -------------------------------------------------
+from fastapi import HTTPException
+
+def validate_page(page: int) -> int:
+    if page < 1:
+        raise HTTPException(status_code=400, detail="page must be >= 1")
+    return page
+
+ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
+def validate_page_size(page_size: int) -> int:
+    if page_size not in ALLOWED_PAGE_SIZES:
+        raise HTTPException(status_code=400, detail=f"page_size must be one of {ALLOWED_PAGE_SIZES}")
+    return page_size
+
+def build_search_clause(term: str) -> str:
+    # Search against product_id + description + supplier_id
+    # Using ILIKE with %term% (GIN trigram accelerates this)
+    return "(product_id ILIKE :q OR description ILIKE :q OR supplier_id ILIKE :q)"
+
+# -------------------------------------------------
+# Filters: purchasing groups list (for dropdown)
+# -------------------------------------------------
+@router.get("/filters/purchasing_groups")
+def filter_purchasing_groups(
+    db: Session = Depends(get_session),
+    q: Optional[str] = Query(None, description="Search filter (optional)"),
+    limit: int = Query(50, ge=1, le=200)
+):
+    where = ""
+    params = {"limit": limit}
+    if q:
+        where = "WHERE purchasing_group ILIKE :q"
+        params["q"] = f"%{q}%"
+
+    rows = db.execute(
+        text(f"""
+            SELECT DISTINCT purchasing_group
+            FROM mv_sku_analysis
+            {where}
+            ORDER BY purchasing_group NULLS LAST
+            LIMIT :limit
+        """),
+        params
+    ).scalars().all()
+    return {"data": rows, "count": len(rows)}
+
+# -------------------------------------------------
+# Filters: suppliers list (for dropdown)
+# -------------------------------------------------
+@router.get("/filters/suppliers")
+def filter_suppliers(
+    db: Session = Depends(get_session),
+    q: Optional[str] = Query(None, description="Search filter (optional)"),
+    limit: int = Query(50, ge=1, le=200)
+):
+    where = ""
+    params = {"limit": limit}
+    if q:
+        where = "WHERE supplier_id ILIKE :q"
+        params["q"] = f"%{q}%"
+
+    rows = db.execute(
+        text(f"""
+            SELECT DISTINCT supplier_id
+            FROM mv_sku_analysis
+            {where}
+            ORDER BY supplier_id
+            LIMIT :limit
+        """),
+        params
+    ).scalars().all()
+    return {"data": rows, "count": len(rows)}
+
+# -------------------------------------------------
+# Detailed SKU Analysis (search + filters + pagination)
+# -------------------------------------------------
+@router.get("/sku/analysis")  # , response_model=PageSKUDetailed)  # optional
+def sku_analysis_table(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+
+    # Filters
+    search: Optional[str] = Query(None, description="Search by SKU/product_id, description or supplier"),
+    purchasing_group: Optional[str] = Query(None),
+    supplier_id: Optional[str] = Query(None),
+
+    # Sorting
+    order_by: Optional[str] = Query("spend", description="spend|qty|price|orders|product"),
+    sort: Optional[str] = Query("desc", description="asc|desc"),
+
+    # Pagination
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
+):
+    page = validate_page(page)
+    page_size = validate_page_size(page_size)
+    offset = (page - 1) * page_size
+
+    # WHERE clause
+    conds = []
+    params = {"limit": page_size, "offset": offset}
+
+    if purchasing_group:
+        conds.append("purchasing_group = :pgroup")
+        params["pgroup"] = purchasing_group
+
+    if supplier_id:
+        conds.append("supplier_id = :supplier_id")
+        params["supplier_id"] = supplier_id
+
+    if search:
+        conds.append(build_search_clause(search))
+        params["q"] = f"%{search}%"
+
+    where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
+
+    # ORDER BY mapping
+    order_map = {
+        "spend": "total_spend",
+        "qty": "total_qty",
+        "price": "avg_unit_price",
+        "orders": "order_count",
+        "product": "product_id"
+    }
+    order_col = order_map.get(order_by, "total_spend")
+    sort_dir = "ASC" if (sort or "").lower() == "asc" else "DESC"
+    order_clause = f"ORDER BY {order_col} {sort_dir}, product_id ASC"
+
+    # Count
+    total = db.execute(
+        text(f"SELECT COUNT(*) FROM mv_sku_analysis {where_clause}"),
+        params
+    ).scalar() or 0
+
+    # Data
+    rows = db.execute(
+        text(f"""
+            SELECT product_id, description, purchasing_group, supplier_id,
+                   order_count, total_qty, total_spend, avg_unit_price, last_order_date
+            FROM mv_sku_analysis
+            {where_clause}
+            {order_clause}
+            LIMIT :limit OFFSET :offset
+        """),
+        params
+    ).mappings().all()
+
+    def dts(v):
+        return v.strftime("%Y-%m-%d") if isinstance(v, datetime) else v
+
+    data = [
+        {
+            **dict(r),
+            "last_order_date": dts(r.get("last_order_date")),
+            "total_spend": float(r.get("total_spend") or 0),
+            "total_qty": float(r.get("total_qty") or 0),
+            "avg_unit_price": float(r.get("avg_unit_price") or 0),
+        } for r in rows
+    ]
+
+    total_pages = (total + page_size - 1) // page_size if page_size else 1
+
+    payload = {
+        "data": data,
+        "meta": {
+            "count": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": total_pages,
+            "order_by": order_col,
+            "sort": sort_dir.lower(),
+            "filters": {
+                "search": search,
+                "purchasing_group": purchasing_group,
+                "supplier_id": supplier_id
+            }
+        }
+    }
+
+    # Caching headers
+    etag = make_etag({
+        "path": str(request.url.path),
+        "query": dict(request.query_params),
+        "count": total
+    })
+    set_cache_headers(response, etag, max_age=60)
+    return payload

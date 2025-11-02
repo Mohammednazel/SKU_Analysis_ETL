@@ -144,6 +144,122 @@ FROM purchase_orders;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_kpi_summary_unique
   ON mv_kpi_summary ((1));
 
+
+-- ==========================================================
+-- Monthly Spend Trend (All Suppliers)
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_spend_trend_monthly AS
+SELECT
+    DATE_TRUNC('month', created_date)::DATE AS month,
+    SUM(net_value)::NUMERIC AS total_spend,
+    SUM(quantity)::NUMERIC AS total_qty,
+    COUNT(DISTINCT purchase_order_id) AS total_pos
+FROM purchase_orders
+GROUP BY DATE_TRUNC('month', created_date)
+ORDER BY month;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_spend_trend_monthly
+    ON mv_spend_trend_monthly (month);
+
+\echo '✅ mv_spend_trend_monthly created.'
+
+
+-- ==========================================================
+-- Supplier Price Analysis (Avg Unit Price per SKU per Supplier)
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_supplier_price_analysis AS
+SELECT
+    supplier_id,
+    product_id,
+    COUNT(DISTINCT purchase_order_id) AS po_count,
+    SUM(quantity)::NUMERIC AS total_qty,
+    SUM(net_value)::NUMERIC AS total_spend,
+    CASE 
+        WHEN SUM(quantity) > 0 THEN ROUND(SUM(net_value) / SUM(quantity), 2)
+        ELSE 0 
+    END AS avg_unit_price,
+    MAX(created_date) AS last_purchase_date
+FROM purchase_orders
+WHERE supplier_id IS NOT NULL
+GROUP BY supplier_id, product_id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_supplier_price_unique
+    ON mv_supplier_price_analysis (supplier_id, product_id);
+
+\echo '✅ mv_supplier_price_analysis created.'
+
+
+-- ==========================================================
+-- Detailed SKU Analysis (SKU x Supplier x Purchasing Group)
+-- Aggregates: totals, weighted price, last purchase
+-- ==========================================================
+
+-- For fast fuzzy search (optional but recommended)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_sku_analysis AS
+WITH items AS (
+    SELECT
+        product_id,
+        supplier_id,
+        purchasing_group,
+        -- choose a stable description (latest non-null)
+        (SELECT i2.description
+         FROM purchase_orders i2
+         WHERE i2.product_id = po.product_id
+         AND   i2.description IS NOT NULL
+         ORDER BY i2.created_date DESC
+         LIMIT 1) AS description,
+        COUNT(DISTINCT purchase_order_id)              AS order_count,
+        SUM(quantity)::NUMERIC                         AS total_qty,
+        SUM(net_value)::NUMERIC                        AS total_spend,
+        CASE
+            WHEN SUM(quantity) > 0
+                THEN ROUND(SUM(net_value) / NULLIF(SUM(quantity),0), 2)
+            ELSE 0
+        END                                            AS avg_unit_price,
+        MAX(created_date)                              AS last_order_date
+    FROM purchase_orders po
+    WHERE product_id IS NOT NULL
+    GROUP BY product_id, supplier_id, purchasing_group
+)
+SELECT
+    product_id,
+    COALESCE(description, '')                         AS description,
+    purchasing_group,
+    supplier_id,
+    order_count,
+    total_qty,
+    total_spend,
+    avg_unit_price,
+    last_order_date
+FROM items;
+
+-- Unique row identity for concurrent refresh support
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_sku_analysis_unique
+    ON mv_sku_analysis (product_id, supplier_id, purchasing_group);
+
+-- Filter indexes
+CREATE INDEX IF NOT EXISTS idx_mv_sku_analysis_pgroup
+    ON mv_sku_analysis (purchasing_group);
+
+CREATE INDEX IF NOT EXISTS idx_mv_sku_analysis_supplier
+    ON mv_sku_analysis (supplier_id);
+
+-- Fast search on product_id + description
+CREATE INDEX IF NOT EXISTS idx_mv_sku_analysis_desc_trgm
+    ON mv_sku_analysis USING gin (description gin_trgm_ops);
+
+CREATE INDEX IF NOT EXISTS idx_mv_sku_analysis_pid_trgm
+    ON mv_sku_analysis USING gin (product_id gin_trgm_ops);
+
+\echo '✅ mv_sku_analysis created.'
+
+
+
+
+
+
 -- =============================
 -- 4️⃣ Snapshot Tables for MV Audits
 -- =============================

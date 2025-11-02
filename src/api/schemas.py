@@ -45,3 +45,17 @@ class PagePGroupSpend(BaseModel):
 class DateRange(BaseModel):
     start_month: Optional[date] = None  # first day of month
     end_month: Optional[date] = None
+class SKUDetailedRow(BaseModel):
+    product_id: str
+    description: Optional[str]
+    purchasing_group: Optional[str]
+    supplier_id: Optional[str]
+    order_count: int
+    total_qty: float
+    total_spend: float
+    avg_unit_price: float
+    last_order_date: Optional[str]
+
+class PageSKUDetailed(BaseModel):
+    data: List[SKUDetailedRow]
+    meta: dict
