@@ -11,8 +11,17 @@ from datetime import datetime
 from api.deps import get_session, positive_limit, non_negative_offset, validate_order_by
 from api.schemas import PageSKUSpend, PageSupplierMonthly, PagePGroupSpend
 from api.utils_cache import make_etag
+from api.deps_auth import verify_api_key
 
-router = APIRouter(prefix="/api/v1", tags=["Instant Analytics"])
+
+# -------------------------------------------------
+# Router with global authentication dependency
+# -------------------------------------------------
+router = APIRouter(
+    prefix="/api/v1",
+    tags=["Instant Analytics"],
+    dependencies=[Depends(verify_api_key)]  # <-- ✅ Auth applied to all endpoints
+)
 
 # -------------------------------------------------
 # In-memory cache store
