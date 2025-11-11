@@ -1,18 +1,19 @@
+# src/api/instant.py
 # API endpoints powered by materialized views
 
-from fastapi import APIRouter, Depends, Response, Request, Query
+from fastapi import APIRouter, Depends, Response, Request, Query, HTTPException
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 from typing import Optional
 import time
-from datetime import datetime
+from datetime import datetime, date
 
 # Absolute imports (important for uvicorn reload)
 from api.deps import get_session, positive_limit, non_negative_offset, validate_order_by
 from api.schemas import PageSKUSpend, PageSupplierMonthly, PagePGroupSpend
 from api.utils_cache import make_etag
 from api.deps_auth import verify_api_key
-
+from api.utils_query import run_mv_query  # centralized MV query helper
 
 # -------------------------------------------------
 # Router with global authentication dependency
@@ -83,7 +84,7 @@ def top_skus(
     else:
         order_clause = "ORDER BY total_spend DESC"
 
-    total = db.execute(text("SELECT COUNT(*) FROM mv_sku_spend")).scalar()
+    total = db.execute(text("SELECT COUNT(*) FROM mv_sku_spend")).scalar() or 0
 
     rows = db.execute(
         text(f"""
@@ -147,10 +148,12 @@ def supplier_monthly(
 
     where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
 
+    # Use count_params that exclude :limit/:offset
+    count_params = {k: v for k, v in params.items() if k not in ("limit", "offset")}
     total = db.execute(
         text(f"SELECT COUNT(*) FROM mv_supplier_monthly {where_clause}"),
-        params
-    ).scalar()
+        count_params
+    ).scalar() or 0
 
     rows = db.execute(
         text(f"""
@@ -180,7 +183,7 @@ def pgroup_top(
     limit: int = Depends(positive_limit),
     offset: int = Depends(non_negative_offset),
 ):
-    total = db.execute(text("SELECT COUNT(*) FROM mv_pgroup_spend")).scalar()
+    total = db.execute(text("SELECT COUNT(*) FROM mv_pgroup_spend")).scalar() or 0
 
     rows = db.execute(
         text("""
@@ -290,9 +293,12 @@ def supplier_price_analysis(
 
     where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
 
+    # Count must not include limit/offset
+    count_params = {k: v for k, v in params.items() if k not in ("limit", "offset")}
     total = db.execute(
-        text(f"SELECT COUNT(*) FROM mv_supplier_price_analysis {where_clause}")
-    ).scalar()
+        text(f"SELECT COUNT(*) FROM mv_supplier_price_analysis {where_clause}"),
+        count_params
+    ).scalar() or 0
 
     rows = db.execute(
         text(f"""
@@ -372,14 +378,13 @@ def spend_trend_monthly(
 # -------------------------------------------------
 # Helpers: pagination validation (page + page_size)
 # -------------------------------------------------
-from fastapi import HTTPException
+ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
 
 def validate_page(page: int) -> int:
     if page < 1:
         raise HTTPException(status_code=400, detail="page must be >= 1")
     return page
 
-ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
 def validate_page_size(page_size: int) -> int:
     if page_size not in ALLOWED_PAGE_SIZES:
         raise HTTPException(status_code=400, detail=f"page_size must be one of {ALLOWED_PAGE_SIZES}")
@@ -501,9 +506,10 @@ def sku_analysis_table(
     order_clause = f"ORDER BY {order_col} {sort_dir}, product_id ASC"
 
     # Count
+    count_params = {k: v for k, v in params.items() if k not in ("limit", "offset")}
     total = db.execute(
         text(f"SELECT COUNT(*) FROM mv_sku_analysis {where_clause}"),
-        params
+        count_params
     ).scalar() or 0
 
     # Data
@@ -558,4 +564,188 @@ def sku_analysis_table(
         "count": total
     })
     set_cache_headers(response, etag, max_age=60)
+    return payload
+
+
+# -------------------------------------------------
+# Contract Opportunities — from mv_contract_candidates
+# -------------------------------------------------
+@router.get("/contracts/opportunities")
+def get_contract_opportunities(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+    min_consistency: Optional[float] = Query(50.0, description="Minimum purchase consistency percentage"),
+    min_spend: Optional[float] = Query(20000.0, description="Minimum total spend threshold"),
+    freq_filter: Optional[str] = Query(None, description="Filter by purchase frequency: VERY_HIGH|HIGH|MEDIUM|LOW"),
+    recommendation_filter: Optional[str] = Query(None, description="Filter by contract recommendation")
+):
+    """
+    Returns SKUs with high purchase frequency and consistency — ideal contract candidates.
+    Data source: mv_contract_candidates.
+    """
+
+    # Build conditions & params
+    conditions = ["purchase_consistency_pct >= :min_consistency", "total_spend >= :min_spend"]
+    params = {"min_consistency": min_consistency, "min_spend": min_spend, "limit": limit, "offset": offset}
+
+    if freq_filter:
+        conditions.append("purchase_frequency = :freq_filter")
+        params["freq_filter"] = freq_filter
+    if recommendation_filter:
+        conditions.append("contract_recommendation = :recommendation_filter")
+        params["recommendation_filter"] = recommendation_filter
+
+    # Use centralized helper to run MV queries
+    total, data = run_mv_query(
+        db,
+        mv_name="mv_contract_candidates",
+        where_clauses=conditions,
+        params=params,
+        order_clause="ORDER BY annual_spend_projected DESC"
+    )
+
+    payload = {
+        "data": data,
+        "meta": {
+            "count": total,
+            "limit": limit,
+            "offset": offset,
+            "filters": {
+                "min_consistency": min_consistency,
+                "min_spend": min_spend,
+                "purchase_frequency": freq_filter,
+                "contract_recommendation": recommendation_filter,
+            },
+        },
+    }
+
+    etag = make_etag({
+        "path": str(request.url.path),
+        "filters": dict(request.query_params),
+        "count": total,
+    })
+    set_cache_headers(response, etag, max_age=300)
+
+    return payload
+
+
+# -------------------------------------------------
+# Supplier Consolidation Opportunities — from mv_supplier_consolidation
+# -------------------------------------------------
+@router.get("/suppliers/consolidation")
+def get_supplier_consolidation_opportunities(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+    tier_filter: Optional[str] = Query(None, description="Filter by supplier tier: TOP_5_STRATEGIC|MID_TIER|LONG_TAIL_CONSOLIDATE"),
+    action_filter: Optional[str] = Query("CONSOLIDATE_TO_TOP_SUPPLIERS", description="Filter by consolidation action")
+):
+    """
+    Returns supplier consolidation recommendations based on spend rank and tier.
+    Data source: mv_supplier_consolidation.
+    """
+    conditions = []
+    params = {"limit": limit, "offset": offset}
+
+    if tier_filter:
+        conditions.append("supplier_tier = :tier_filter")
+        params["tier_filter"] = tier_filter
+    if action_filter:
+        conditions.append("consolidation_action = :action_filter")
+        params["action_filter"] = action_filter
+
+    total, data = run_mv_query(
+        db,
+        mv_name="mv_supplier_consolidation",
+        where_clauses=conditions,
+        params=params,
+        order_clause="ORDER BY total_spend DESC"
+    )
+
+    payload = {
+        "data": data,
+        "meta": {
+            "count": total,
+            "limit": limit,
+            "offset": offset,
+            "filters": {
+                "supplier_tier": tier_filter,
+                "consolidation_action": action_filter,
+            },
+        },
+    }
+
+    etag = make_etag({
+        "path": str(request.url.path),
+        "filters": dict(request.query_params),
+        "count": total,
+    })
+    set_cache_headers(response, etag, max_age=300)
+
+    return payload
+
+
+# -------------------------------------------------
+# Best Price Opportunities — from mv_volume_discount_opportunities
+# -------------------------------------------------
+@router.get("/suppliers/best_price_opportunities")
+def get_best_price_opportunities(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+    opportunity_level: Optional[str] = Query(None)
+):
+    conditions, params = [], {"limit": limit, "offset": offset}
+    if opportunity_level:
+        conditions.append("opportunity_level = :opportunity_level")
+        params["opportunity_level"] = opportunity_level
+
+    total, data = run_mv_query(
+        db,
+        mv_name="mv_volume_discount_opportunities",
+        where_clauses=conditions,
+        params=params,
+        order_clause="ORDER BY potential_savings DESC"
+    )
+
+    payload = {"data": data, "meta": {"count": total, "limit": limit, "offset": offset}}
+    etag = make_etag({"path": str(request.url.path), "query": dict(request.query_params), "count": total})
+    set_cache_headers(response, etag, max_age=300)
+    return payload
+
+# -------------------------------------------------
+# SKU Fragmentation — from mv_sku_fragmentation_score
+# -------------------------------------------------
+@router.get("/sku/fragmentation")
+def get_sku_fragmentation(
+    request: Request,
+    response: Response,
+    db: Session = Depends(get_session),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+    fragmentation_level: Optional[str] = Query(None)
+):
+    conditions, params = [], {"limit": limit, "offset": offset}
+    if fragmentation_level:
+        conditions.append("fragmentation_level = :fragmentation_level")
+        params["fragmentation_level"] = fragmentation_level
+
+    total, data = run_mv_query(
+        db,
+        mv_name="mv_sku_fragmentation_score",
+        where_clauses=conditions,
+        params=params,
+        order_clause="ORDER BY supplier_count DESC"
+    )
+
+    payload = {"data": data, "meta": {"count": total, "limit": limit, "offset": offset}}
+    etag = make_etag({"path": str(request.url.path), "query": dict(request.query_params), "count": total})
+    set_cache_headers(response, etag, max_age=300)
     return payload

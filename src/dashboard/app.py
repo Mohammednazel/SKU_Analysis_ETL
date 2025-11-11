@@ -4,11 +4,16 @@ import requests
 import pandas as pd
 from datetime import datetime
 import plotly.express as px
+import os
+from dotenv import load_dotenv
 
 # ======================
 # CONFIGURATION
 # ======================
-API_BASE = "http://127.0.0.1:8000/api/v1"
+load_dotenv()  # Load API key and config from .env
+
+API_BASE = os.getenv("API_BASE_URL", "http://127.0.0.1:8000/api/v1")
+API_KEY = os.getenv("API_SECRET_KEY", "")  # Secure API key for backend access
 
 st.set_page_config(
     page_title="Procurement Intelligence Dashboard",
@@ -21,8 +26,14 @@ st.set_page_config(
 # ======================
 @st.cache_data(ttl=300)
 def fetch_json(endpoint: str, params: dict = None):
+    """Fetch JSON from backend API with API key authentication"""
+    headers = {"x-api-key": API_KEY}
+    url = f"{API_BASE}/{endpoint}"
     try:
-        r = requests.get(f"{API_BASE}/{endpoint}", params=params)
+        r = requests.get(url, params=params, headers=headers, timeout=30)
+        if r.status_code == 401:
+            st.error("🔒 Unauthorized: Invalid or missing API key. Please check your configuration.")
+            return {}
         r.raise_for_status()
         return r.json()
     except Exception as e:
@@ -132,7 +143,7 @@ if pgroup_data.get("data"):
         names="purchasing_group",
         values="total_spend",
         title="Spend Distribution by Purchasing Group",
-        hole=0.4,  # donut style
+        hole=0.4,
         color_discrete_sequence=px.colors.qualitative.Pastel,
     )
     st.plotly_chart(fig_pg, use_container_width=True)
@@ -160,31 +171,6 @@ if top_skus.get("data"):
 else:
     st.info("No SKU data available.")
 
-# --- Supplier Price Analysis (Grouped Bar Chart)
-st.subheader("Supplier Price Analysis (Top 5 Suppliers)")
-if spend_trend.get("data"):
-    df_sup = pd.DataFrame(spend_trend["data"])
-    df_sup = (
-        df_sup.groupby(["supplier_id", "month"])["total_spend"]
-        .mean()
-        .reset_index()
-        .sort_values("month")
-    )
-    top_suppliers = df_sup["supplier_id"].value_counts().nlargest(5).index
-    df_sup = df_sup[df_sup["supplier_id"].isin(top_suppliers)]
-
-    fig_sup = px.bar(
-        df_sup,
-        x="month",
-        y="total_spend",
-        color="supplier_id",
-        barmode="group",
-        title="Average Monthly Spend per Supplier",
-    )
-    st.plotly_chart(fig_sup, use_container_width=True)
-else:
-    st.info("No supplier price data available.")
-
 # ======================
 # SECTION 3: TRANSACTION ANALYSIS
 # ======================
@@ -192,14 +178,11 @@ st.markdown("---")
 st.markdown("### 💳 Section 3: Transaction Analysis")
 st.caption("Complete view of SKU transactions with advanced filters")
 
-# --- Dynamic Filters ---
 col1, col2, col3, col4 = st.columns([2, 2, 2, 1])
 
-# Fetch filter options safely
 filter_pg = fetch_json("filters/purchasing_groups")
 filter_sup = fetch_json("filters/suppliers")
 
-# Handle both list-of-dicts and list-of-strings cases
 pgroups_data = filter_pg.get("data", [])
 suppliers_data = filter_sup.get("data", [])
 
@@ -218,7 +201,6 @@ pgroup_filter = col2.selectbox("Purchasing Group", pgroups, index=0)
 supplier_filter = col3.selectbox("Supplier", suppliers, index=0)
 page_size = col4.selectbox("Rows per page", [5, 10, 25, 50], index=1)
 
-# --- Fetch SKU Analysis Table Data ---
 params = {"page": 1, "page_size": page_size}
 if search:
     params["search"] = search

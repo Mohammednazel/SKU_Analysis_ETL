@@ -59,3 +59,55 @@ class SKUDetailedRow(BaseModel):
 class PageSKUDetailed(BaseModel):
     data: List[SKUDetailedRow]
     meta: dict
+
+
+class ContractOpportunity(BaseModel):
+     product_id: str 
+     supplier_id: Optional[str] 
+     avg_orders_per_month: float 
+     purchase_consistency_pct: float 
+     purchase_frequency: str 
+     contract_recommendation: str 
+     annual_spend_projected: float
+
+class PageContractOpportunities(BaseModel):
+     data: List[ContractOpportunity] 
+     meta: dict 
+
+class SupplierConsolidation(BaseModel):
+     supplier_id: str 
+     unique_skus: int 
+     total_spend: float 
+     spend_rank: int 
+     spend_pct: float 
+     supplier_tier: str 
+     consolidation_action: str 
+     
+class PageSupplierConsolidation(BaseModel): 
+    data: List[SupplierConsolidation] 
+    meta: dict 
+    
+class VolumeDiscountOpportunity(BaseModel): 
+    product_id: str 
+    current_supplier_id: str 
+    best_supplier_id: str 
+    current_avg_price: float 
+    best_unit_price: float 
+    potential_savings: float 
+    savings_pct: float 
+    opportunity_level: str 
+    
+class PageVolumeDiscountOpportunities(BaseModel): 
+    data: List[VolumeDiscountOpportunity] 
+    meta: dict 
+
+class SKUFragmentation(BaseModel): 
+    product_id: str 
+    supplier_count: int 
+    total_spend: float 
+    fragmentation_score: float 
+    fragmentation_level: str 
+    
+class PageSKUFragmentation(BaseModel): 
+    data: List[SKUFragmentation] 
+    meta: dict

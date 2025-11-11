@@ -45,7 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_po_material_group ON purchase_orders(material_gro
 
 
 -- =====================================
--- 2️⃣ ETL Metadata Tables (Checkpoints)
+-- 2️⃣ ETL Metadata Tables (Checkpoints & Locks)
 -- =====================================
 CREATE TABLE IF NOT EXISTS etl_checkpoint (
     id SERIAL PRIMARY KEY,
@@ -66,7 +66,16 @@ CREATE TABLE IF NOT EXISTS etl_run_log (
     error_message TEXT
 );
 
+CREATE TABLE IF NOT EXISTS etl_lock (
+    job_name TEXT PRIMARY KEY,
+    started_at TIMESTAMPTZ DEFAULT now(),
+    status TEXT DEFAULT 'running'
+);
+
+
 \echo '✅ ETL metadata tables created.'
+
+
 
 
 -- =============================
@@ -126,6 +135,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_pgroup_spend
 
 CREATE MATERIALIZED VIEW IF NOT EXISTS mv_kpi_summary AS
 SELECT 
+    1 As id ,
     COUNT(DISTINCT purchase_order_id)                        AS total_pos,
     COUNT(DISTINCT product_id)                               AS total_skus,
     COUNT(DISTINCT supplier_id)                              AS total_suppliers,
@@ -133,7 +143,6 @@ SELECT
     COALESCE(SUM(quantity), 0)::numeric                      AS total_quantity,
     ROUND(COALESCE(SUM(net_value) / NULLIF(SUM(quantity), 0), 0), 2) AS avg_unit_price_weighted,
     ROUND(COALESCE(SUM(net_value) / NULLIF(COUNT(DISTINCT purchase_order_id), 0), 0), 2) AS avg_order_value,
-    ROUND(COALESCE(SUM(net_value) / NULLIF(COUNT(DISTINCT supplier_id), 0), 0), 2) AS spend_per_supplier,
     ROUND(COALESCE(SUM(net_value) / NULLIF(COUNT(DISTINCT product_id), 0), 0), 2) AS spend_per_sku,
     ROUND(COALESCE(MAX(net_value) / NULLIF(MIN(net_value), 0), 1), 2)             AS spend_variability_ratio,
     MAX(created_date)                                                             AS last_po_date,
@@ -142,7 +151,7 @@ FROM purchase_orders;
 
 -- Required for CONCURRENT REFRESH
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_kpi_summary_unique
-  ON mv_kpi_summary ((1));
+  ON mv_kpi_summary (id);
 
 
 -- ==========================================================
@@ -256,6 +265,255 @@ CREATE INDEX IF NOT EXISTS idx_mv_sku_analysis_pid_trgm
 \echo '✅ mv_sku_analysis created.'
 
 
+-- ==========================================================
+-- mv_contract_candidates (corrected)
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_contract_candidates AS
+WITH monthly_orders AS (
+    SELECT
+        product_id,
+        supplier_id,
+        DATE_TRUNC('month', created_date)::date AS month,
+        COUNT(DISTINCT purchase_order_id) AS orders_in_month,
+        SUM(net_value)::numeric AS monthly_spend
+    FROM purchase_orders
+    WHERE product_id IS NOT NULL AND supplier_id IS NOT NULL
+    GROUP BY product_id, supplier_id, DATE_TRUNC('month', created_date)
+),
+stats AS (
+    SELECT
+        product_id,
+        supplier_id,
+        COUNT(DISTINCT month) AS active_months,
+        SUM(orders_in_month) AS total_orders,
+        SUM(monthly_spend) AS total_spend,
+        -- months_observed: inclusive months between min and max month
+        (
+            (EXTRACT(year FROM MAX(month)) - EXTRACT(year FROM MIN(month)))::int * 12
+            + (EXTRACT(month FROM MAX(month)) - EXTRACT(month FROM MIN(month)))::int
+            + 1
+        )::int AS months_observed
+    FROM monthly_orders
+    GROUP BY product_id, supplier_id
+)
+SELECT
+    s.product_id,
+    s.supplier_id,
+    -- avg_orders_per_month as numeric, rounded to 2 decimals
+    ROUND(
+        (s.total_orders::numeric) /
+        NULLIF(s.months_observed::numeric, 0)
+    , 2) AS avg_orders_per_month,
+    -- purchase_consistency_pct = 100 * active_months / months_observed
+    ROUND(
+        100.0 * (s.active_months::numeric) /
+        NULLIF(s.months_observed::numeric, 0)
+    , 2) AS purchase_consistency_pct,
+    CASE
+        WHEN ROUND((s.total_orders::numeric) / NULLIF(s.months_observed::numeric,0), 2) >= 10 THEN 'VERY_HIGH'
+        WHEN ROUND((s.total_orders::numeric) / NULLIF(s.months_observed::numeric,0), 2) >= 5 THEN 'HIGH'
+        WHEN ROUND((s.total_orders::numeric) / NULLIF(s.months_observed::numeric,0), 2) >= 2 THEN 'MEDIUM'
+        ELSE 'LOW'
+    END AS purchase_frequency,
+    CASE
+        WHEN ROUND(100.0 * (s.active_months::numeric) / NULLIF(s.months_observed::numeric,0), 2) >= 75
+             AND s.total_spend > 100000 THEN 'ANNUAL_CONTRACT_RECOMMENDED'
+        WHEN ROUND(100.0 * (s.active_months::numeric) / NULLIF(s.months_observed::numeric,0), 2) >= 50
+             AND s.total_spend > 20000 THEN 'QUARTERLY_CONTRACT_RECOMMENDED'
+        WHEN ROUND(100.0 * (s.active_months::numeric) / NULLIF(s.months_observed::numeric,0), 2) >= 75 THEN 'BLANKET_PO_RECOMMENDED'
+        ELSE 'SPOT_BUY_OK'
+    END AS contract_recommendation,
+    -- annual_spend_projected: scale observed spend to annual if needed
+    ROUND(
+        (s.total_spend::numeric) * 12.0 / NULLIF(s.months_observed::numeric, 0)
+    , 2) AS annual_spend_projected
+FROM stats s;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_contract_candidates
+    ON mv_contract_candidates (product_id, supplier_id);
+
+
+
+-- ==========================================================
+-- mv_supplier_consolidation (corrected, robust)
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_supplier_consolidation AS
+WITH supplier_stats AS (
+    SELECT
+        supplier_id,
+        COUNT(DISTINCT product_id) AS unique_skus,
+        SUM(net_value)::numeric AS total_spend
+    FROM purchase_orders
+    WHERE supplier_id IS NOT NULL
+    GROUP BY supplier_id
+),
+ranked AS (
+    SELECT
+        supplier_id,
+        unique_skus,
+        total_spend,
+        RANK() OVER (ORDER BY total_spend DESC) AS spend_rank,
+        SUM(total_spend) OVER () AS grand_total
+    FROM supplier_stats
+)
+SELECT
+    r.supplier_id,
+    r.unique_skus,
+    r.total_spend,
+    r.spend_rank,
+    ROUND(100.0 * r.total_spend / NULLIF(r.grand_total, 0), 4) AS spend_pct,
+    CASE
+        WHEN r.spend_rank <= 5 THEN 'TOP_5_STRATEGIC'
+        WHEN r.spend_rank <= 50 THEN 'MID_TIER'
+        ELSE 'LONG_TAIL_CONSOLIDATE'
+    END AS supplier_tier,
+    CASE
+        WHEN r.spend_rank > 50
+             AND (100.0 * r.total_spend / NULLIF(r.grand_total, 0)) < 0.5
+            THEN 'CONSOLIDATE_TO_TOP_SUPPLIERS'
+        ELSE 'KEEP'
+    END AS consolidation_action
+FROM ranked r;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_supplier_consolidation
+    ON mv_supplier_consolidation (supplier_id);
+
+-- ==========================================================
+-- VOLUME DISCOUNT / BEST SUPPLIER OPPORTUNITIES
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_volume_discount_opportunities AS
+WITH supplier_prices AS (
+    SELECT
+        product_id,
+        supplier_id,
+        ROUND(AVG(unit_price)::numeric, 2) AS avg_unit_price,
+        SUM(net_value)::numeric AS total_spend,
+        SUM(quantity)::numeric AS total_qty
+    FROM purchase_orders
+    WHERE unit_price IS NOT NULL AND quantity > 0
+    GROUP BY product_id, supplier_id
+),
+ranked AS (
+    SELECT
+        product_id,
+        supplier_id,
+        avg_unit_price,
+        total_spend,
+        total_qty,
+        RANK() OVER (PARTITION BY product_id ORDER BY avg_unit_price ASC) AS price_rank
+    FROM supplier_prices
+),
+best_prices AS (
+    SELECT
+        product_id,
+        supplier_id AS best_supplier_id,
+        avg_unit_price AS best_unit_price
+    FROM ranked
+    WHERE price_rank = 1
+)
+SELECT
+    r.product_id,
+    r.supplier_id AS current_supplier_id,
+    r.avg_unit_price AS current_avg_price,
+    b.best_supplier_id,
+    b.best_unit_price,
+    ROUND((r.avg_unit_price - b.best_unit_price) * r.total_qty, 2) AS potential_savings,
+    ROUND(100.0 * (r.avg_unit_price - b.best_unit_price) / NULLIF(r.avg_unit_price, 0), 2) AS savings_pct,
+    CASE
+        WHEN (r.avg_unit_price - b.best_unit_price) * r.total_qty >= 10000 THEN 'HIGH_SAVINGS_OPPORTUNITY'
+        WHEN (r.avg_unit_price - b.best_unit_price) * r.total_qty >= 1000 THEN 'MEDIUM_SAVINGS_OPPORTUNITY'
+        ELSE 'LOW_SAVINGS_OPPORTUNITY'
+    END AS opportunity_level
+FROM ranked r
+JOIN best_prices b USING (product_id)
+WHERE r.price_rank > 1 AND r.avg_unit_price > b.best_unit_price;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_volume_discount_opportunities
+    ON mv_volume_discount_opportunities (product_id, current_supplier_id);
+\echo '✅ mv_volume_discount_opportunities created.'
+
+-- ==========================================================
+-- VOLUME DISCOUNT / BEST SUPPLIER OPPORTUNITIES (FIXED)
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_volume_discount_opportunities AS
+WITH supplier_prices AS (
+    SELECT
+        product_id,
+        supplier_id,
+        ROUND(AVG(unit_price)::numeric, 2) AS avg_unit_price,
+        SUM(net_value)::numeric AS total_spend,
+        SUM(quantity)::numeric AS total_qty
+    FROM purchase_orders
+    WHERE unit_price IS NOT NULL AND quantity > 0
+    GROUP BY product_id, supplier_id
+),
+ranked AS (
+    SELECT
+        product_id,
+        supplier_id,
+        avg_unit_price,
+        total_spend,
+        total_qty,
+        RANK() OVER (PARTITION BY product_id ORDER BY avg_unit_price ASC) AS price_rank
+    FROM supplier_prices
+),
+best_prices AS (
+    SELECT
+        product_id,
+        supplier_id AS best_supplier_id,
+        avg_unit_price AS best_unit_price
+    FROM ranked
+    WHERE price_rank = 1
+)
+SELECT
+    md5(r.product_id || '-' || r.supplier_id || '-' || b.best_supplier_id)::uuid AS id,
+    r.product_id,
+    r.supplier_id AS current_supplier_id,
+    r.avg_unit_price AS current_avg_price,
+    b.best_supplier_id,
+    b.best_unit_price,
+    ROUND((r.avg_unit_price - b.best_unit_price) * r.total_qty, 2) AS potential_savings,
+    ROUND(100.0 * (r.avg_unit_price - b.best_unit_price) / NULLIF(r.avg_unit_price, 0), 2) AS savings_pct,
+    CASE
+        WHEN (r.avg_unit_price - b.best_unit_price) * r.total_qty >= 10000 THEN 'HIGH_SAVINGS_OPPORTUNITY'
+        WHEN (r.avg_unit_price - b.best_unit_price) * r.total_qty >= 1000 THEN 'MEDIUM_SAVINGS_OPPORTUNITY'
+        ELSE 'LOW_SAVINGS_OPPORTUNITY'
+    END AS opportunity_level
+FROM ranked r
+JOIN best_prices b USING (product_id)
+WHERE r.price_rank > 1 AND r.avg_unit_price > b.best_unit_price;
+
+-- ✅ Unique index on surrogate key
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_volume_discount_opportunities
+    ON mv_volume_discount_opportunities (id);
+
+\echo '✅ mv_volume_discount_opportunities created successfully (deduplicated).'
+
+
+-- ==========================================================
+-- SKU FRAGMENTATION SCORE
+-- ==========================================================
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_sku_fragmentation_score AS
+SELECT
+    product_id,
+    COUNT(DISTINCT supplier_id) AS supplier_count,
+    SUM(net_value)::numeric AS total_spend,
+    ROUND(
+        100.0 * COUNT(DISTINCT supplier_id)::numeric / NULLIF(SUM(net_value)::numeric, 0),
+        4
+    ) AS fragmentation_score,
+    CASE
+        WHEN COUNT(DISTINCT supplier_id) > 5 THEN 'HIGHLY_FRAGMENTED'
+        WHEN COUNT(DISTINCT supplier_id) BETWEEN 3 AND 5 THEN 'MODERATELY_FRAGMENTED'
+        ELSE 'CONSOLIDATED'
+    END AS fragmentation_level
+FROM purchase_orders
+WHERE supplier_id IS NOT NULL
+GROUP BY product_id;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_sku_fragmentation_score
+    ON mv_sku_fragmentation_score (product_id);
+\echo '✅ mv_sku_fragmentation_score created.'
 
 
 

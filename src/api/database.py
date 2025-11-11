@@ -4,15 +4,16 @@ from sqlalchemy.orm import sessionmaker
 from dotenv import load_dotenv
 
 load_dotenv()
-
 DATABASE_URL = os.getenv("DATABASE_URL")
 
-# Pooled engine for API read traffic
+# Optimized pooled engine for API read/write traffic
 engine = create_engine(
     DATABASE_URL,
-    pool_pre_ping=True,
-    pool_size=10,
-    max_overflow=20,
+    pool_size=20,           # Persistent connections
+    max_overflow=40,        # Allow burst connections
+    pool_pre_ping=True,     # Validate before use
+    pool_recycle=3600,      # Recycle every hour
+    pool_timeout=30         # Wait up to 30s for a connection
 )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)

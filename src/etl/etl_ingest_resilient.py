@@ -102,7 +102,14 @@ validate_env()
 # =========================================================
 # 4) DB Engine & Metadata
 # =========================================================
-engine = create_engine(DATABASE_URL, pool_pre_ping=True, pool_size=5, max_overflow=10)
+engine = create_engine(
+    DATABASE_URL,
+    pool_size=5,          # Smaller pool is fine for ETL jobs
+    max_overflow=10,      # Occasional temporary bursts
+    pool_pre_ping=True,   # Keep connections healthy
+    pool_recycle=1800,    # Recycle every 30 min
+    pool_timeout=60       # Wait up to 1 minute for connection
+)
 metadata = MetaData()
 
 def validate_target_table(expected_cols: List[str]) -> None:
@@ -178,14 +185,8 @@ def optional_truncate_for_historical():
 
 # ---- ETL lock (NEW) ----
 def acquire_lock(job_name: str):
+    # Safe: assume lock table exists from init.sql
     with engine.begin() as conn:
-        conn.execute(text("""
-            CREATE TABLE IF NOT EXISTS etl_lock (
-                job_name TEXT PRIMARY KEY,
-                started_at TIMESTAMPTZ DEFAULT now(),
-                status TEXT DEFAULT 'running'
-            )
-        """))
         existing = conn.execute(
             text("SELECT 1 FROM etl_lock WHERE job_name=:job AND status='running'"),
             {"job": job_name}
@@ -200,7 +201,7 @@ def acquire_lock(job_name: str):
             """),
             {"job": job_name}
         )
-    logger.info(f"🔒 ETL lock acquired for {job_name}.")
+
 
 def release_lock(job_name: str):
     with engine.begin() as conn:

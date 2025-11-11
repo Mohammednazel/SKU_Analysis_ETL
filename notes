@@ -1,4 +1,16 @@
-python src/etl/etl_ingest.py
+
+
+1) .\venv\Scripts\Activate 
+
+2) $env:PYTHONPATH="C:\Users\Nazel\OneDrive\Desktop\nadec-analysis\SKU_Frequency_Analysis\src"
+python src/etl/etl_ingest_resilient.py
+
+
+python -m src.etl.etl_ingest_resilient
+
+3) python run_api.py
+
+4) streamlit run src/dashboard/app.py
 
 | Area                          | Strength                                                           | Why It Matters                                |
 | ----------------------------- | ------------------------------------------------------------------ | --------------------------------------------- |
@@ -25,3 +37,971 @@ Step	What Happens	Table/Function Involved
 6️⃣	Loop continues until done	Check pagination.has_more
 7️⃣	ETL completes	record_etl_run() logs job summary in etl_run_log
 8️⃣	If failure occurs	Partial progress saved, next run resumes automatically
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+etl_ingest_resilient.py 
+
+
+
+# =============================================================
+# 🚀 Async ETL Ingestion Pipeline (Resilient + High Performance)
+# Version 3.2 — Full Feature Parity with 2.8 + Full Async Rewrite
+# =============================================================
+"""
+✅ Async HTTP fetch (httpx.AsyncClient + retry/backoff)
+✅ Async PostgreSQL UPSERT (SQLAlchemy asyncio + asyncpg)
+✅ ETL lock + checkpoint resume
+✅ Historical truncate + mode-based execution
+✅ Hash-aware idempotent UPSERT
+✅ Response validation + DQ checks
+✅ Config validation + target table validation
+✅ Monitoring + email alerts + summary refresh
+"""
+
+import os, sys, asyncio, json, hashlib, logging
+import pandas as pd
+import httpx
+from datetime import datetime, timezone
+from typing import Optional, List, Dict, Tuple, Any
+from dotenv import load_dotenv
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy import Table, MetaData, text, inspect
+from sqlalchemy.dialects.postgresql import insert
+from sqlalchemy.orm import sessionmaker
+
+# Project imports
+from src.db.refresh_summaries import refresh_all
+from monitoring.alerting import send_email
+from monitoring.monitors import evaluate_run
+
+# =========================================================
+# Load environment variables
+# =========================================================
+load_dotenv()
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+DATA_SOURCE_URL = os.getenv("DATA_SOURCE_URL")
+CHUNK_SIZE = min(int(os.getenv("CHUNK_SIZE", "100")), 100)
+RATE_LIMIT_DELAY = float(os.getenv("RATE_LIMIT_DELAY", "0.2"))
+INCREMENTAL_DAYS = int(os.getenv("INCREMENTAL_DAYS", "2"))
+MODE = os.getenv("MODE", "daily").lower()
+HISTORICAL_TRUNCATE = os.getenv("HISTORICAL_TRUNCATE", "true").lower() in ("1", "true", "yes")
+REFRESH_SUMMARIES = os.getenv("REFRESH_SUMMARIES", "true").lower() in ("1", "true", "yes")
+TAKE_DAILY_SNAPSHOT = os.getenv("TAKE_DAILY_SNAPSHOT", "false").lower() in ("1", "true", "yes")
+JOB_NAME = os.getenv("JOB_NAME", "purchase_order_ingest")
+TARGET_TABLE = os.getenv("TARGET_TABLE", "purchase_orders")
+
+# =========================================================
+# Logging
+# =========================================================
+os.makedirs("src/logs", exist_ok=True)
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s | %(levelname)s | %(message)s",
+    handlers=[
+        logging.FileHandler("src/logs/etl_ingest_async.log", encoding="utf-8"),
+        logging.StreamHandler(),
+    ],
+)
+logger = logging.getLogger(__name__)
+
+# =========================================================
+# Async Engine
+# =========================================================
+engine = create_async_engine(DATABASE_URL, pool_size=10, max_overflow=20)
+metadata = MetaData()
+AsyncSessionLocal = sessionmaker(bind=engine, class_=AsyncSession, expire_on_commit=False)
+
+# =========================================================
+# 1️⃣ Config Validation
+# =========================================================
+def validate_env():
+    required = ["DATABASE_URL", "DATA_SOURCE_URL", "TARGET_TABLE", "MODE"]
+    missing = [k for k in required if not os.getenv(k)]
+    if missing:
+        raise RuntimeError(f"Missing required environment variables: {missing}")
+    if MODE not in ("daily", "historical"):
+        raise RuntimeError(f"Invalid MODE: {MODE}. Must be 'daily' or 'historical'.")
+    try:
+        _ = int(CHUNK_SIZE)
+        _ = float(RATE_LIMIT_DELAY)
+        _ = int(INCREMENTAL_DAYS)
+    except ValueError as e:
+        raise RuntimeError(f"Invalid numeric env var: {e}")
+validate_env()
+
+# =========================================================
+# 2️⃣ Checkpoint + Lock Tables
+# =========================================================
+async def ensure_checkpoint_table():
+    ddl = """
+    CREATE TABLE IF NOT EXISTS etl_checkpoint (
+        job_name TEXT PRIMARY KEY,
+        last_offset INT NOT NULL DEFAULT 0,
+        last_run TIMESTAMPTZ DEFAULT now()
+    );
+    CREATE TABLE IF NOT EXISTS etl_lock (
+        job_name TEXT PRIMARY KEY,
+        started_at TIMESTAMPTZ DEFAULT now(),
+        status TEXT DEFAULT 'running'
+    );
+    CREATE TABLE IF NOT EXISTS etl_run_log (
+        mode TEXT,
+        start_time TIMESTAMPTZ,
+        end_time TIMESTAMPTZ,
+        rows_processed INT,
+        rows_inserted INT,
+        status TEXT,
+        error_message TEXT
+    );
+    """
+    async with engine.begin() as conn:
+        for stmt in ddl.strip().split(";"):
+            if stmt.strip():
+                await conn.execute(text(stmt))
+
+async def get_checkpoint(job: str) -> int:
+    async with engine.connect() as conn:
+        v = await conn.execute(text("SELECT last_offset FROM etl_checkpoint WHERE job_name=:job"), {"job": job})
+        val = v.scalar()
+        return int(val or 0)
+
+async def save_checkpoint(job: str, offset: int):
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("""
+                INSERT INTO etl_checkpoint (job_name, last_offset, last_run)
+                VALUES (:job, :off, now())
+                ON CONFLICT (job_name)
+                DO UPDATE SET last_offset = EXCLUDED.last_offset, last_run = now();
+            """),
+            {"job": job, "off": offset},
+        )
+
+async def acquire_lock(job: str):
+    async with engine.begin() as conn:
+        existing = await conn.execute(
+            text("SELECT 1 FROM etl_lock WHERE job_name=:job AND status='running'"),
+            {"job": job},
+        )
+        if existing.scalar():
+            raise RuntimeError(f"ETL job '{job}' already running.")
+        await conn.execute(
+            text("""
+                INSERT INTO etl_lock (job_name, started_at, status)
+                VALUES (:job, now(), 'running')
+                ON CONFLICT (job_name) DO UPDATE SET started_at = now(), status='running';
+            """),
+            {"job": job},
+        )
+    logger.info(f"🔒 Lock acquired for {job}.")
+
+async def release_lock(job: str):
+    async with engine.begin() as conn:
+        await conn.execute(text("DELETE FROM etl_lock WHERE job_name=:job"), {"job": job})
+    logger.info(f"🔓 Lock released for {job}.")
+
+# =========================================================
+# 3️⃣ Record ETL Run
+# =========================================================
+async def record_etl_run(start_time, end_time, rows_processed, status, error_msg=None, mode="daily"):
+    # Convert tz-aware → naive UTC timestamps
+    start_time = start_time.replace(tzinfo=None) if start_time.tzinfo else start_time
+    end_time = end_time.replace(tzinfo=None) if end_time.tzinfo else end_time
+
+    async with engine.begin() as conn:
+        await conn.execute(
+            text("""
+                INSERT INTO etl_run_log
+                (mode, start_time, end_time, rows_processed, rows_inserted, status, error_message)
+                VALUES (:mode, :start, :end, :rp, :ri, :st, :err)
+            """),
+            {
+                "mode": mode,
+                "start": start_time,
+                "end": end_time,
+                "rp": rows_processed,
+                "ri": rows_processed,
+                "st": status,
+                "err": error_msg,
+            },
+        )
+
+# =========================================================
+# 4️⃣ Target Table Validation
+# =========================================================
+async def validate_target_table(required_cols: List[str]):
+    async with engine.connect() as conn:
+        inspector = inspect(conn)
+        cols = {c["name"] for c in inspector.get_columns(TARGET_TABLE)}
+        missing = [c for c in required_cols if c not in cols]
+        if missing:
+            raise RuntimeError(f"Target table '{TARGET_TABLE}' missing columns: {missing}")
+
+# =========================================================
+# 5️⃣ Optional Historical Truncate
+# =========================================================
+async def optional_truncate_for_historical():
+    if MODE == "historical" and HISTORICAL_TRUNCATE:
+        async with engine.begin() as conn:
+            await conn.execute(text(f"TRUNCATE TABLE {TARGET_TABLE} RESTART IDENTITY;"))
+        await save_checkpoint(JOB_NAME, 0)
+        logger.info(f"🧹 Table truncated for historical reload and checkpoint reset.")
+
+# =========================================================
+# 6️⃣ HTTP Fetch + Response Validation
+# =========================================================
+async def _validate_api_json(js: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    if not isinstance(js, dict):
+        raise ValueError("Invalid API response: expected JSON object.")
+    items = js.get("purchase_orders") or js.get("data") or []
+    if not isinstance(items, list):
+        raise ValueError("Invalid 'data' format: must be a list.")
+    pagination = js.get("pagination", {}) or {}
+    if "returned" not in pagination:
+        pagination["returned"] = len(items)
+    if "has_more" not in pagination:
+        pagination["has_more"] = bool(items)
+    return items, pagination
+
+async def fetch_page_async(client: httpx.AsyncClient, offset: int, limit: int, start_date=None):
+    params = {"limit": limit, "offset": offset}
+    if start_date:
+        params["start_date"] = start_date.strftime("%Y-%m-%d")
+
+    for attempt in range(5):
+        try:
+            resp = await client.get(DATA_SOURCE_URL, params=params, timeout=60)
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get("Retry-After", "5"))
+                logger.warning(f"Rate limited (429). Retrying in {retry_after}s.")
+                await asyncio.sleep(retry_after)
+                continue
+            resp.raise_for_status()
+            js = resp.json()
+            return await _validate_api_json(js)
+        except Exception as e:
+            logger.warning(f"Fetch retry {attempt+1}/5 offset={offset}: {e}")
+            await asyncio.sleep(2 ** attempt)
+    return [], {"has_more": False}
+
+# =========================================================
+# 7️⃣ Transform + DQ Checks
+# =========================================================
+CRITICAL_FIELDS_ORDER = ["purchase_order_id"]
+CRITICAL_FIELDS_ITEM = ["item_number", "product_id"]
+
+def transform_data(raw_orders: list) -> pd.DataFrame:
+    flat = []
+    for order in raw_orders:
+        if any(not order.get(k) for k in CRITICAL_FIELDS_ORDER):
+            continue
+        base = {
+            "purchase_order_id": order.get("purchase_order_id"),
+            "created_date": order.get("created_date"),
+            "status": order.get("status"),
+            "supplier_id": order.get("supplier_id"),
+            "purchasing_group": order.get("purchasing_group"),
+        }
+        for item in order.get("items", []):
+            if any(item.get(k) in (None, "") for k in CRITICAL_FIELDS_ITEM):
+                continue
+            row = {
+                **base,
+                "line_item_number": item.get("item_number"),
+                "plant": item.get("plant"),
+                "product_id": item.get("product_id"),
+                "description": item.get("description"),
+                "quantity": pd.to_numeric(item.get("quantity"), errors="coerce"),
+                "unit": item.get("unit"),
+                "unit_price": pd.to_numeric(item.get("unit_price"), errors="coerce"),
+                "net_value": pd.to_numeric(item.get("net_value"), errors="coerce"),
+                "material_group": item.get("material_group"),
+            }
+            hash_basis = {
+                k: row.get(k)
+                for k in [
+                    "purchase_order_id", "line_item_number", "product_id",
+                    "quantity", "unit_price", "net_value", "supplier_id", "created_date"
+                ]
+            }
+            row["source_hash"] = hashlib.md5(json.dumps(hash_basis, sort_keys=True, default=str).encode()).hexdigest()
+            flat.append(row)
+    df = pd.DataFrame(flat)
+    if not df.empty:
+        df["created_date"] = pd.to_datetime(df["created_date"], errors="coerce", utc=True)
+        df = df.dropna(subset=["purchase_order_id", "line_item_number", "product_id"])
+    return df
+
+# =========================================================
+# 8️⃣ Async UPSERT
+# =========================================================
+async def upsert_dataframe_async(df: pd.DataFrame, table_name: str = TARGET_TABLE, chunk_size: int = 2000):
+    """
+    Asynchronous UPSERT (insert or update if hash differs).
+    Handles mixed dtypes, NaNs, and timezone-aware datetimes.
+    """
+    if df.empty:
+        logger.info("⚠️ No data to upsert (empty dataframe).")
+        return
+
+    # --- 1. Reflect table using async-safe sync call
+    async with engine.begin() as conn:
+        def load_table(sync_conn):
+            meta = MetaData()
+            return Table(table_name, meta, autoload_with=sync_conn)
+        table = await conn.run_sync(load_table)
+
+    # --- 2. Clean data types for asyncpg compatibility
+    df = df.copy()
+    for col in df.select_dtypes(include=["datetime64[ns, UTC]", "datetime64[ns]"]):
+        df[col] = df[col].dt.tz_localize(None)  # strip tzinfo
+
+    # Replace NaN/NaT → None for PostgreSQL
+    df = df.where(pd.notnull(df), None)
+
+    async with AsyncSessionLocal() as session:
+        total = len(df)
+        for start in range(0, total, chunk_size):
+            batch = df.iloc[start:start + chunk_size].copy()
+
+            # Convert to list of dicts for insertion
+            records = batch.to_dict(orient="records")
+
+            if not records:
+                continue
+
+            stmt = insert(table).values(records)
+
+            # Define columns to update (excluding primary keys)
+            update_cols = {
+                c.name: stmt.excluded[c.name]
+                for c in table.columns
+                if c.name not in ("purchase_order_id", "line_item_number")
+            }
+
+            stmt = stmt.on_conflict_do_update(
+                index_elements=["purchase_order_id", "line_item_number"],
+                set_=update_cols,
+                where=(table.c.source_hash != stmt.excluded.source_hash)
+            )
+
+            try:
+                await session.execute(stmt)
+                await session.commit()
+                logger.info(f"✅ Upserted batch: {len(batch)} rows.")
+            except Exception as e:
+                await session.rollback()
+                logger.error(f"❌ Async upsert batch failed ({len(batch)} rows): {e}")
+                raise
+
+    logger.info(f"✅ Total upsert complete: {len(df)} rows async.")
+
+# =========================================================
+# 9️⃣ Orchestrator
+# =========================================================
+async def run_etl_async():
+    await ensure_checkpoint_table()
+    await acquire_lock(JOB_NAME)
+    if MODE == "historical":
+        await optional_truncate_for_historical()
+
+    start_time = datetime.now(timezone.utc)
+    total_processed = 0
+    status = "success"
+    error_msg = None
+    offset = 0 if MODE == "historical" else await get_checkpoint(JOB_NAME)
+    start_date = None if MODE == "historical" else datetime.now(timezone.utc) - pd.Timedelta(days=INCREMENTAL_DAYS)
+
+    try:
+        async with httpx.AsyncClient(timeout=60) as client:
+            while True:
+                tasks = [fetch_page_async(client, offset + i * CHUNK_SIZE, CHUNK_SIZE, start_date) for i in range(5)]
+                results = await asyncio.gather(*tasks)
+                all_items = [item for result, _ in results for item in result]
+                if not all_items:
+                    break
+                df = transform_data(all_items)
+                await upsert_dataframe_async(df)
+                total_processed += len(df)
+                offset += CHUNK_SIZE * len(results)
+                await save_checkpoint(JOB_NAME, offset)
+                logger.info(f"Processed {len(df)} rows; offset={offset}")
+                await asyncio.sleep(RATE_LIMIT_DELAY)
+    except Exception as e:
+        logger.exception("❌ ETL failed:")
+        status, error_msg = "failed", str(e)
+    finally:
+        await release_lock(JOB_NAME)
+
+    end_time = datetime.now(timezone.utc)
+    await record_etl_run(start_time, end_time, total_processed, status, error_msg, MODE)
+
+    duration = (end_time - start_time).total_seconds()
+    logger.info(f"✅ ETL completed | Mode={MODE} | Status={status} | Duration={duration:.1f}s | Rows={total_processed}")
+
+    ok, issues = await evaluate_run(engine, MODE, total_processed, duration)
+
+    if not ok or status != "success":
+        subj = f"[ETL] {status.upper()} - mode={MODE}, rows={total_processed}, dur={duration:.1f}s"
+        body = "\n".join(issues or ["No issues"]) + (f"\nError: {error_msg}" if error_msg else "")
+        send_email(subj, body, body.replace("\n", "<br>"))
+
+    if status == "success" and REFRESH_SUMMARIES:
+        await refresh_all(concurrently=True, snapshot=TAKE_DAILY_SNAPSHOT)
+
+# =========================================================
+# Entrypoint
+# =========================================================
+if __name__ == "__main__":
+    asyncio.run(run_etl_async())
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+instant.py
+
+
+
+"""
+Async FastAPI Endpoints powered by Materialized Views
+-----------------------------------------------------
+✅ Fully async (AsyncSession + asyncpg)
+✅ Global API key authentication
+✅ In-memory + ETag caching
+✅ Filter, pagination, and analytics endpoints
+✅ Compatible with Docker + Local
+"""
+
+from fastapi import (
+    APIRouter, Depends, Response, Request, Query, HTTPException
+)
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import text
+from typing import Optional
+from datetime import datetime
+import time
+
+# ----------------------------------------
+# Local Imports
+# ----------------------------------------
+from api.database import get_async_session
+from api.deps import positive_limit, non_negative_offset, validate_order_by
+from api.schemas import PageSKUSpend, PageSupplierMonthly, PagePGroupSpend
+from api.utils_cache import make_etag
+from api.deps_auth import verify_api_key
+
+# ----------------------------------------
+# Router Configuration
+# ----------------------------------------
+router = APIRouter(
+    prefix="/api/v1",
+    tags=["Instant Analytics"],
+    dependencies=[Depends(verify_api_key)],  # ✅ Enforce API Key globally
+)
+
+# ----------------------------------------
+# In-memory Cache Store
+# ----------------------------------------
+CACHE_TTL = 60  # seconds
+_cache_store = {}
+
+def cache_result(key: str, value: dict, ttl: int = CACHE_TTL):
+    _cache_store[key] = (value, time.time() + ttl)
+
+def get_cached(key: str):
+    entry = _cache_store.get(key)
+    if not entry:
+        return None
+    value, expiry = entry
+    if time.time() > expiry:
+        del _cache_store[key]
+        return None
+    return value
+
+def set_cache_headers(resp: Response, etag: str, max_age: int = 60):
+    resp.headers["ETag"] = etag
+    resp.headers["Cache-Control"] = f"public, max-age={max_age}"
+
+# ----------------------------------------
+# Health Endpoint
+# ----------------------------------------
+@router.get("/health")
+async def health(db: AsyncSession = Depends(get_async_session)):
+    await db.execute(text("SELECT 1"))
+    return {"status": "ok"}
+
+# ----------------------------------------
+# Top SKUs
+# ----------------------------------------
+@router.get("/sku/top", response_model=PageSKUSpend)
+async def top_skus(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_session),
+    order_by: str = Depends(validate_order_by),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+):
+    cache_key = f"sku_top:{order_by}:{limit}:{offset}"
+    cached = get_cached(cache_key)
+    if cached:
+        response.headers["X-Cache-Hit"] = "true"
+        return cached
+
+    order_clause = {
+        "qty": "ORDER BY total_qty DESC",
+        "orders": "ORDER BY order_count DESC",
+    }.get(order_by, "ORDER BY total_spend DESC")
+
+    total = (await db.execute(text("SELECT COUNT(*) FROM mv_sku_spend"))).scalar()
+
+    rows = (
+        await db.execute(
+            text(f"""
+                SELECT product_id, total_spend, total_qty, order_count,
+                       COALESCE(avg_unit_price_weighted, 0) AS avg_unit_price_weighted,
+                       last_order_date
+                FROM mv_sku_spend
+                {order_clause}
+                LIMIT :limit OFFSET :offset
+            """),
+            {"limit": limit, "offset": offset},
+        )
+    ).mappings().all()
+
+    def fmt_date(v):
+        return v.strftime("%Y-%m-%d") if isinstance(v, datetime) else v
+
+    data = [{**dict(r), "last_order_date": fmt_date(r.get("last_order_date"))} for r in rows]
+
+    payload = {"data": data, "meta": {"limit": limit, "offset": offset, "count": total}}
+    cache_result(cache_key, payload)
+    response.headers["X-Cache-Hit"] = "false"
+
+    etag = make_etag({"path": str(request.url.path), "params": dict(request.query_params)})
+    set_cache_headers(response, etag, max_age=60)
+    return payload
+
+# ----------------------------------------
+# Supplier Monthly
+# ----------------------------------------
+@router.get("/supplier/monthly", response_model=PageSupplierMonthly)
+async def supplier_monthly(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_session),
+    supplier_id: Optional[str] = Query(None),
+    start_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    end_month: Optional[str] = Query(None, description="YYYY-MM-01"),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+):
+    conds, params = [], {"limit": limit, "offset": offset}
+    if supplier_id:
+        conds.append("supplier_id = :supplier_id")
+        params["supplier_id"] = supplier_id
+    if start_month and end_month:
+        conds.append("month BETWEEN :start_month AND :end_month")
+        params.update({"start_month": start_month, "end_month": end_month})
+
+    where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
+
+    total = (
+        await db.execute(text(f"SELECT COUNT(*) FROM mv_supplier_monthly {where_clause}"), params)
+    ).scalar()
+
+    rows = (
+        await db.execute(
+            text(f"""
+                SELECT supplier_id, month, total_spend, po_count, unique_skus
+                FROM mv_supplier_monthly
+                {where_clause}
+                ORDER BY month DESC, total_spend DESC
+                LIMIT :limit OFFSET :offset
+            """),
+            params,
+        )
+    ).mappings().all()
+
+    data = [dict(r) for r in rows]
+    payload = {"data": data, "meta": {"count": total, "limit": limit, "offset": offset}}
+
+    etag = make_etag({"path": str(request.url.path), "params": dict(request.query_params)})
+    set_cache_headers(response, etag, max_age=60)
+    return payload
+
+# ----------------------------------------
+# Purchasing Group Spend
+# ----------------------------------------
+@router.get("/pgroup/top", response_model=PagePGroupSpend)
+async def pgroup_top(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_session),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+):
+    total = (await db.execute(text("SELECT COUNT(*) FROM mv_pgroup_spend"))).scalar()
+
+    rows = (
+        await db.execute(
+            text("""
+                SELECT purchasing_group, total_spend, po_count, avg_order_value
+                FROM mv_pgroup_spend
+                ORDER BY total_spend DESC
+                LIMIT :limit OFFSET :offset
+            """),
+            {"limit": limit, "offset": offset},
+        )
+    ).mappings().all()
+
+    data = [dict(r) for r in rows]
+    payload = {"data": data, "meta": {"limit": limit, "offset": offset, "count": total}}
+
+    etag = make_etag({"path": str(request.url.path), "params": dict(request.query_params)})
+    set_cache_headers(response, etag, max_age=120)
+    return payload
+
+# ----------------------------------------
+# KPI Summary
+# ----------------------------------------
+@router.get("/kpi")
+async def get_kpi_summary(
+    request: Request, response: Response, db: AsyncSession = Depends(get_async_session)
+):
+    cache_key = "global_kpi_summary"
+    cached = get_cached(cache_key)
+    if cached:
+        response.headers["X-Cache-Hit"] = "true"
+        return cached
+
+    row = (await db.execute(text("SELECT * FROM mv_kpi_summary;"))).mappings().first()
+    if not row:
+        raise HTTPException(status_code=404, detail="KPI summary not found")
+
+    result = dict(row)
+    result["last_refresh_time"] = (
+        result["last_refresh_time"].strftime("%Y-%m-%d %H:%M:%S")
+        if result.get("last_refresh_time")
+        else None
+    )
+
+    payload = {
+        "meta": {"source": "mv_kpi_summary", "refreshed_at": result["last_refresh_time"]},
+        "data": result,
+    }
+
+    cache_result(cache_key, payload, ttl=300)
+    response.headers["X-Cache-Hit"] = "false"
+    etag = make_etag({"path": str(request.url.path), "timestamp": result["last_refresh_time"]})
+    set_cache_headers(response, etag, max_age=300)
+    return payload
+
+# ----------------------------------------
+# Supplier Price Analysis
+# ----------------------------------------
+@router.get("/supplier/price_analysis")
+async def supplier_price_analysis(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_session),
+    supplier_id: Optional[str] = Query(None),
+    product_id: Optional[str] = Query(None),
+    limit: int = Depends(positive_limit),
+    offset: int = Depends(non_negative_offset),
+):
+    conds, params = [], {"limit": limit, "offset": offset}
+    if supplier_id:
+        conds.append("supplier_id = :supplier_id")
+        params["supplier_id"] = supplier_id
+    if product_id:
+        conds.append("product_id = :product_id")
+        params["product_id"] = product_id
+
+    where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
+    total = (await db.execute(text(f"SELECT COUNT(*) FROM mv_supplier_price_analysis {where_clause}"), params)).scalar()
+
+    rows = (
+        await db.execute(
+            text(f"""
+                SELECT supplier_id, product_id, po_count, total_qty, total_spend,
+                       avg_unit_price, last_purchase_date
+                FROM mv_supplier_price_analysis
+                {where_clause}
+                ORDER BY avg_unit_price DESC
+                LIMIT :limit OFFSET :offset
+            """),
+            params,
+        )
+    ).mappings().all()
+
+    def fmt_date(v):
+        return v.strftime("%Y-%m-%d") if isinstance(v, datetime) else v
+
+    data = [{**dict(r), "last_purchase_date": fmt_date(r.get("last_purchase_date"))} for r in rows]
+    payload = {"data": data, "meta": {"count": total, "limit": limit, "offset": offset}}
+
+    etag = make_etag({"path": str(request.url.path), "params": dict(request.query_params)})
+    set_cache_headers(response, etag, max_age=120)
+    return payload
+
+# ----------------------------------------
+# Spend Trend (Line Chart)
+# ----------------------------------------
+@router.get("/spend/trend")
+async def spend_trend_monthly(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_session),
+):
+    rows = (
+        await db.execute(
+            text("""
+                SELECT month, total_spend, total_qty, total_pos
+                FROM mv_spend_trend_monthly
+                ORDER BY month
+            """)
+        )
+    ).mappings().all()
+
+    data = [
+        {
+            "month": r["month"].strftime("%Y-%m") if r.get("month") else None,
+            "total_spend": float(r["total_spend"] or 0),
+            "total_qty": float(r["total_qty"] or 0),
+            "total_pos": int(r["total_pos"] or 0),
+        }
+        for r in rows
+    ]
+    payload = {"data": data, "count": len(data)}
+
+    etag = make_etag({"path": str(request.url.path), "count": len(data)})
+    set_cache_headers(response, etag, max_age=300)
+    return payload
+
+# ----------------------------------------
+# Pagination Helpers
+# ----------------------------------------
+def validate_page(page: int) -> int:
+    if page < 1:
+        raise HTTPException(status_code=400, detail="page must be >= 1")
+    return page
+
+ALLOWED_PAGE_SIZES = (5, 10, 25, 50)
+
+def validate_page_size(page_size: int) -> int:
+    if page_size not in ALLOWED_PAGE_SIZES:
+        raise HTTPException(status_code=400, detail=f"page_size must be one of {ALLOWED_PAGE_SIZES}")
+    return page_size
+
+def build_search_clause(term: str) -> str:
+    return "(product_id ILIKE :q OR description ILIKE :q OR supplier_id ILIKE :q)"
+
+# ----------------------------------------
+# Filters: Purchasing Groups
+# ----------------------------------------
+@router.get("/filters/purchasing_groups")
+async def filter_purchasing_groups(
+    db: AsyncSession = Depends(get_async_session),
+    q: Optional[str] = Query(None, description="Search filter (optional)"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    where, params = "", {"limit": limit}
+    if q:
+        where = "WHERE purchasing_group ILIKE :q"
+        params["q"] = f"%{q}%"
+
+    rows = (
+        await db.execute(
+            text(f"""
+                SELECT DISTINCT purchasing_group
+                FROM mv_sku_analysis
+                {where}
+                ORDER BY purchasing_group NULLS LAST
+                LIMIT :limit
+            """),
+            params,
+        )
+    ).scalars().all()
+    return {"data": rows, "count": len(rows)}
+
+# ----------------------------------------
+# Filters: Suppliers
+# ----------------------------------------
+@router.get("/filters/suppliers")
+async def filter_suppliers(
+    db: AsyncSession = Depends(get_async_session),
+    q: Optional[str] = Query(None, description="Search filter (optional)"),
+    limit: int = Query(50, ge=1, le=200),
+):
+    where, params = "", {"limit": limit}
+    if q:
+        where = "WHERE supplier_id ILIKE :q"
+        params["q"] = f"%{q}%"
+
+    rows = (
+        await db.execute(
+            text(f"""
+                SELECT DISTINCT supplier_id
+                FROM mv_sku_analysis
+                {where}
+                ORDER BY supplier_id
+                LIMIT :limit
+            """),
+            params,
+        )
+    ).scalars().all()
+    return {"data": rows, "count": len(rows)}
+
+# ----------------------------------------
+# SKU Analysis Table
+# ----------------------------------------
+@router.get("/sku/analysis")
+async def sku_analysis_table(
+    request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_session),
+    search: Optional[str] = Query(None),
+    purchasing_group: Optional[str] = Query(None),
+    supplier_id: Optional[str] = Query(None),
+    order_by: Optional[str] = Query("spend"),
+    sort: Optional[str] = Query("desc"),
+    page: int = Query(1, ge=1),
+    page_size: int = Query(10, ge=1),
+):
+    page = validate_page(page)
+    page_size = validate_page_size(page_size)
+    offset = (page - 1) * page_size
+
+    conds, params = [], {"limit": page_size, "offset": offset}
+    if purchasing_group:
+        conds.append("purchasing_group = :pgroup")
+        params["pgroup"] = purchasing_group
+    if supplier_id:
+        conds.append("supplier_id = :supplier_id")
+        params["supplier_id"] = supplier_id
+    if search:
+        conds.append(build_search_clause(search))
+        params["q"] = f"%{search}%"
+
+    where_clause = f"WHERE {' AND '.join(conds)}" if conds else ""
+
+    order_map = {
+        "spend": "total_spend",
+        "qty": "total_qty",
+        "price": "avg_unit_price",
+        "orders": "order_count",
+        "product": "product_id",
+    }
+    order_col = order_map.get(order_by, "total_spend")
+    sort_dir = "ASC" if (sort or "").lower() == "asc" else "DESC"
+
+    total = (
+        await db.execute(text(f"SELECT COUNT(*) FROM mv_sku_analysis {where_clause}"), params)
+    ).scalar() or 0
+
+    rows = (
+        await db.execute(
+            text(f"""
+                SELECT product_id, description, purchasing_group, supplier_id,
+                       order_count, total_qty, total_spend, avg_unit_price, last_order_date
+                FROM mv_sku_analysis
+                {where_clause}
+                ORDER BY {order_col} {sort_dir}
+                LIMIT :limit OFFSET :offset
+            """),
+            params,
+        )
+    ).mappings().all()
+
+    def fmt_date(v):
+        return v.strftime("%Y-%m-%d") if isinstance(v, datetime) else v
+
+    data = [
+        {
+            **dict(r),
+            "last_order_date": fmt_date(r.get("last_order_date")),
+            "total_spend": float(r.get("total_spend") or 0),
+            "total_qty": float(r.get("total_qty") or 0),
+            "avg_unit_price": float(r.get("avg_unit_price") or 0),
+        }
+        for r in rows
+    ]
+
+    payload = {
+        "data": data,
+        "meta": {
+            "count": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": (total + page_size - 1) // page_size if page_size else 1,
+            "order_by": order_col,
+            "sort": sort_dir.lower(),
+            "filters": {
+                "search": search,
+                "purchasing_group": purchasing_group,
+                "supplier_id": supplier_id,
+            },
+        },
+    }
+
+    etag = make_etag({"path": str(request.url.path), "params": dict(request.query_params)})
+    set_cache_headers(response, etag, max_age=60)
+    return payload
+
+
+
+
+database.py
+
+
+# src/api/database.py
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
+from sqlalchemy.orm import sessionmaker
+import os
+
+DATABASE_URL = os.getenv("DATABASE_URL")
+
+engine = create_async_engine(
+    DATABASE_URL,
+    echo=False,
+    pool_size=10,
+    max_overflow=20
+)
+
+AsyncSessionLocal = sessionmaker(
+    bind=engine,
+    class_=AsyncSession,
+    expire_on_commit=False
+)
+
+async def get_async_session() -> AsyncSession:
+    async with AsyncSessionLocal() as session:
+        yield session
