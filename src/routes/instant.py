@@ -15,6 +15,18 @@ from api.utils_cache import make_etag
 from api.deps_auth import verify_api_key
 from api.utils_query import run_mv_query  # centralized MV query helper
 
+
+# NEW imports for rate limiting
+from fastapi import Request
+
+
+
+
+from api.limiter import limiter  # import limiter singleton directly
+
+
+
+
 # -------------------------------------------------
 # Router with global authentication dependency
 # -------------------------------------------------
@@ -62,6 +74,7 @@ def health(db: Session = Depends(get_session)):
 # Top SKUs (with in-memory caching)
 # -------------------------------------------------
 @router.get("/sku/top", response_model=PageSKUSpend)
+@limiter.limit("100/minute")
 def top_skus(
     request: Request,
     response: Response,
@@ -126,6 +139,7 @@ def top_skus(
 # Supplier monthly (no caching)
 # -------------------------------------------------
 @router.get("/supplier/monthly", response_model=PageSupplierMonthly)
+@limiter.limit("100/minute")
 def supplier_monthly(
     request: Request,
     response: Response,
@@ -176,6 +190,7 @@ def supplier_monthly(
 # Purchasing group spend (no caching)
 # -------------------------------------------------
 @router.get("/pgroup/top", response_model=PagePGroupSpend)
+@limiter.limit("100/minute")
 def pgroup_top(
     request: Request,
     response: Response,
@@ -206,6 +221,7 @@ def pgroup_top(
 # KPI Summary (cached, ultra-fast)
 # -------------------------------------------------
 @router.get("/kpi")
+@limiter.limit("30/minute")
 def get_kpi_summary(
     request: Request,
     response: Response,

@@ -3,11 +3,13 @@
 import os
 import sys
 import logging
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import create_engine, text
 
+# 🔹 NEW imports for rate limiting (use shared instance)
+from api.limiter import limiter, rate_limit_exceeded_handler, RateLimitExceededException
 
 # Add project root to sys.path so imports work regardless of entrypoint
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
@@ -18,16 +20,12 @@ from api.middlewares.error_handler import ErrorHandlerMiddleware
 from api.utils_logger import setup_json_logging
 from routes.instant import router as instant_router
 
-
 from dotenv import load_dotenv
 load_dotenv()
 
 # -------------------------------------------------
 # Environment & Logging Setup
 # -------------------------------------------------
-
-
-# Initialize structured JSON logging
 setup_json_logging()
 logger = logging.getLogger(__name__)
 
@@ -46,19 +44,27 @@ def create_app() -> FastAPI:
     )
 
     # -------------------------------------------------
+    # 🔹 Rate Limiting Setup (slowapi)
+    # -------------------------------------------------
+    # ✅ Use the shared limiter instance from api.limiter (DO NOT redeclare)
+    app.state.limiter = limiter
+    app.add_exception_handler(RateLimitExceededException, rate_limit_exceeded_handler)
+
+    @app.middleware("http")
+    async def global_rate_limit(request: Request, call_next):
+        try:
+            # Global baseline limit (200 req/min per IP)
+            return await limiter.limit("200/minute")(call_next)(request)
+        except RateLimitExceededException as e:
+            return rate_limit_exceeded_handler(request, e)
+
+    # -------------------------------------------------
     # Middleware Setup
     # -------------------------------------------------
-
-    # Compress large responses for performance
     app.add_middleware(GZipMiddleware, minimum_size=500)
-
-    # Custom global error handler (structured, traceable)
     app.add_middleware(ErrorHandlerMiddleware)
-
-    # Timing Middleware for request performance monitoring
     app.add_middleware(TimingMiddleware)
 
-    # Enable CORS (frontend & dashboards)
     origins = os.getenv("CORS_ORIGINS", "*")
     app.add_middleware(
         CORSMiddleware,
@@ -78,7 +84,6 @@ def create_app() -> FastAPI:
     # -------------------------------------------------
     @app.on_event("startup")
     def startup_db_check():
-        """Verify that the database is reachable before serving requests."""
         db_url = os.getenv("DATABASE_URL")
         if not db_url:
             logger.error("❌ DATABASE_URL not found in environment variables.")
