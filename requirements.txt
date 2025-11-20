@@ -8,3 +8,5 @@ python-dotenv
 tenacity
 pydantic
 psycopg2-binary>=2.9.9
+slowapi==0.1.8
+tenacity

@@ -1,0 +1,23 @@
+cat > pyproject.toml <<'PYPROJECT'
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sku_fragmentation"
+version = "0.0.1"
+description = "Procurement analytics API + ETL"
+requires-python = ">=3.9"
+dependencies = [
+  "fastapi",
+  "uvicorn",
+  "sqlalchemy",
+  "psycopg[binary]",
+  "pandas",
+  "requests",
+  "python-dotenv",
+  "tenacity",
+  "slowapi",
+  "redis"
+]
+PYPROJECT

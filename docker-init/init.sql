@@ -378,59 +378,6 @@ FROM ranked r;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_supplier_consolidation
     ON mv_supplier_consolidation (supplier_id);
 
--- ==========================================================
--- VOLUME DISCOUNT / BEST SUPPLIER OPPORTUNITIES
--- ==========================================================
-CREATE MATERIALIZED VIEW IF NOT EXISTS mv_volume_discount_opportunities AS
-WITH supplier_prices AS (
-    SELECT
-        product_id,
-        supplier_id,
-        ROUND(AVG(unit_price)::numeric, 2) AS avg_unit_price,
-        SUM(net_value)::numeric AS total_spend,
-        SUM(quantity)::numeric AS total_qty
-    FROM purchase_orders
-    WHERE unit_price IS NOT NULL AND quantity > 0
-    GROUP BY product_id, supplier_id
-),
-ranked AS (
-    SELECT
-        product_id,
-        supplier_id,
-        avg_unit_price,
-        total_spend,
-        total_qty,
-        RANK() OVER (PARTITION BY product_id ORDER BY avg_unit_price ASC) AS price_rank
-    FROM supplier_prices
-),
-best_prices AS (
-    SELECT
-        product_id,
-        supplier_id AS best_supplier_id,
-        avg_unit_price AS best_unit_price
-    FROM ranked
-    WHERE price_rank = 1
-)
-SELECT
-    r.product_id,
-    r.supplier_id AS current_supplier_id,
-    r.avg_unit_price AS current_avg_price,
-    b.best_supplier_id,
-    b.best_unit_price,
-    ROUND((r.avg_unit_price - b.best_unit_price) * r.total_qty, 2) AS potential_savings,
-    ROUND(100.0 * (r.avg_unit_price - b.best_unit_price) / NULLIF(r.avg_unit_price, 0), 2) AS savings_pct,
-    CASE
-        WHEN (r.avg_unit_price - b.best_unit_price) * r.total_qty >= 10000 THEN 'HIGH_SAVINGS_OPPORTUNITY'
-        WHEN (r.avg_unit_price - b.best_unit_price) * r.total_qty >= 1000 THEN 'MEDIUM_SAVINGS_OPPORTUNITY'
-        ELSE 'LOW_SAVINGS_OPPORTUNITY'
-    END AS opportunity_level
-FROM ranked r
-JOIN best_prices b USING (product_id)
-WHERE r.price_rank > 1 AND r.avg_unit_price > b.best_unit_price;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_volume_discount_opportunities
-    ON mv_volume_discount_opportunities (product_id, current_supplier_id);
-\echo '✅ mv_volume_discount_opportunities created.'
 
 -- ==========================================================
 -- VOLUME DISCOUNT / BEST SUPPLIER OPPORTUNITIES (FIXED)
@@ -560,3 +507,150 @@ ANALYZE purchase_orders;
 VACUUM purchase_orders;
 
 \echo '🎯 Database initialized successfully.'
+
+
+-- ==========================================================
+-- RFM Threshold Table
+-- ==========================================================
+CREATE TABLE IF NOT EXISTS rfm_thresholds (
+    metric TEXT PRIMARY KEY,
+    p10 NUMERIC,
+    p25 NUMERIC,
+    p50 NUMERIC,
+    p75 NUMERIC,
+    p90 NUMERIC,
+    computed_at TIMESTAMPTZ DEFAULT now()
+);
+
+\echo '✅ rfm_thresholds table created.'
+
+
+-- ================================================================
+-- Compute percentile-based RFM thresholds — FIXED VERSION
+-- (Works in one SQL statement; safe for pgAdmin)
+-- ================================================================
+
+WITH base AS (
+    SELECT
+        product_id,
+        DATE_PART('day', now() - MAX(created_date)) AS recency_days,
+        COUNT(DISTINCT DATE_TRUNC('month', created_date)) AS frequency_months,
+        SUM(net_value)::numeric AS monetary_spend
+    FROM purchase_orders
+    WHERE product_id IS NOT NULL
+    GROUP BY product_id
+),
+recency_pct AS (
+    SELECT
+        'recency_days' AS metric,
+        percentile_cont(0.10) WITHIN GROUP (ORDER BY recency_days) AS p10,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY recency_days) AS p25,
+        percentile_cont(0.50) WITHIN GROUP (ORDER BY recency_days) AS p50,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY recency_days) AS p75,
+        percentile_cont(0.90) WITHIN GROUP (ORDER BY recency_days) AS p90
+    FROM base
+),
+frequency_pct AS (
+    SELECT
+        'frequency_months' AS metric,
+        percentile_cont(0.10) WITHIN GROUP (ORDER BY frequency_months) AS p10,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY frequency_months) AS p25,
+        percentile_cont(0.50) WITHIN GROUP (ORDER BY frequency_months) AS p50,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY frequency_months) AS p75,
+        percentile_cont(0.90) WITHIN GROUP (ORDER BY frequency_months) AS p90
+    FROM base
+),
+monetary_pct AS (
+    SELECT
+        'monetary_spend' AS metric,
+        percentile_cont(0.10) WITHIN GROUP (ORDER BY monetary_spend) AS p10,
+        percentile_cont(0.25) WITHIN GROUP (ORDER BY monetary_spend) AS p25,
+        percentile_cont(0.50) WITHIN GROUP (ORDER BY monetary_spend) AS p50,
+        percentile_cont(0.75) WITHIN GROUP (ORDER BY monetary_spend) AS p75,
+        percentile_cont(0.90) WITHIN GROUP (ORDER BY monetary_spend) AS p90
+    FROM base
+),
+all_thresholds AS (
+    SELECT * FROM recency_pct
+    UNION ALL
+    SELECT * FROM frequency_pct
+    UNION ALL
+    SELECT * FROM monetary_pct
+)
+INSERT INTO rfm_thresholds (metric, p10, p25, p50, p75, p90, computed_at)
+SELECT metric, p10, p25, p50, p75, p90, now()
+FROM all_thresholds
+ON CONFLICT (metric)
+DO UPDATE SET
+    p10 = EXCLUDED.p10,
+    p25 = EXCLUDED.p25,
+    p50 = EXCLUDED.p50,
+    p75 = EXCLUDED.p75,
+    p90 = EXCLUDED.p90,
+    computed_at = now();
+
+
+-- ==========================================================
+-- Materialized View: RFM Score Assignment
+-- ==========================================================
+
+CREATE MATERIALIZED VIEW IF NOT EXISTS mv_rfm_scores AS
+WITH raw AS (
+    SELECT
+        product_id,
+        supplier_id,
+        EXTRACT(DAY FROM (NOW() - MAX(created_date)))::NUMERIC AS recency_days,
+        COUNT(DISTINCT DATE_TRUNC('month', created_date))::NUMERIC AS frequency_months,
+        SUM(net_value)::NUMERIC AS monetary_spend
+    FROM purchase_orders
+    WHERE supplier_id IS NOT NULL
+    GROUP BY product_id, supplier_id
+),
+
+r AS (SELECT * FROM rfm_thresholds WHERE metric = 'recency_days'),
+f AS (SELECT * FROM rfm_thresholds WHERE metric = 'frequency_months'),
+m AS (SELECT * FROM rfm_thresholds WHERE metric = 'monetary_spend')
+
+SELECT
+    raw.product_id,
+    raw.supplier_id,
+
+    /* =====================
+       RECENCY SCORE (R1–R5)
+       ===================== */
+    CASE
+        WHEN raw.recency_days <= r.p10 THEN 5
+        WHEN raw.recency_days <= r.p25 THEN 4
+        WHEN raw.recency_days <= r.p50 THEN 3
+        WHEN raw.recency_days <= r.p75 THEN 2
+        ELSE 1
+    END AS r_score,
+
+    /* =====================
+       FREQUENCY SCORE (F1–F5)
+       ===================== */
+    CASE
+        WHEN raw.frequency_months >= f.p90 THEN 5
+        WHEN raw.frequency_months >= f.p75 THEN 4
+        WHEN raw.frequency_months >= f.p50 THEN 3
+        WHEN raw.frequency_months >= f.p25 THEN 2
+        ELSE 1
+    END AS f_score,
+
+    /* =====================
+       MONETARY SCORE (M1–M5)
+       ===================== */
+    CASE
+        WHEN raw.monetary_spend >= m.p90 THEN 5
+        WHEN raw.monetary_spend >= m.p75 THEN 4
+        WHEN raw.monetary_spend >= m.p50 THEN 3
+        WHEN raw.monetary_spend >= m.p25 THEN 2
+        ELSE 1
+    END AS m_score
+
+FROM raw, r, f, m;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_mv_rfm_scores
+  ON mv_rfm_scores (product_id, supplier_id);
+
+\echo '✅ mv_rfm_scores created (with RFM categories).'

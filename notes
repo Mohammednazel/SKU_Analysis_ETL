@@ -12,6 +12,8 @@ python -m src.etl.etl_ingest_resilient
 
 4) streamlit run src/dashboard/app.py
 
+uvicorn main:app --reload 
+
 | Area                          | Strength                                                           | Why It Matters                                |
 | ----------------------------- | ------------------------------------------------------------------ | --------------------------------------------- |
 | **Pagination support**        | `offset`, `limit`, `has_more` handled                              | Handles 100k+ records without overloading API |

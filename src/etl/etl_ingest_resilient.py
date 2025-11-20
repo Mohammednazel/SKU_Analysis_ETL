@@ -4,7 +4,7 @@
 ##############################################
 
 import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")))
+
 
 import json
 import time
@@ -113,13 +113,17 @@ def ensure_checkpoint_table():
         conn.execute(text(ddl))
 
 
-def get_checkpoint(job_name: str) -> int:
+def get_checkpoint(job_name: str) -> Tuple[int, Optional[datetime]]:
     with engine.connect() as conn:
-        v = conn.execute(text(
-            "SELECT last_offset FROM etl_checkpoint WHERE job_name = :job"),
-            {"job": job_name}).scalar()
-        return int(v or 0)
-
+        row = conn.execute(text(
+            "SELECT last_offset, last_run FROM etl_checkpoint WHERE job_name = :job"),
+            {"job": job_name}).fetchone()
+        
+        if row:
+            # Return (offset, last_run_timestamp)
+            return int(row[0]), row[1]
+        else:
+            return 0, None
 
 def save_checkpoint(job_name: str, offset: int):
     with engine.begin() as conn:
@@ -132,14 +136,22 @@ def save_checkpoint(job_name: str, offset: int):
 
 
 def acquire_lock(job_name: str):
-    """Assumes etl_lock exists (in init.sql)"""
     with engine.begin() as conn:
-        existing = conn.execute(text(
-            "SELECT 1 FROM etl_lock WHERE job_name=:job AND status='running'"),
-            {"job": job_name}).fetchone()
-        if existing:
-            raise RuntimeError(f"ETL job '{job_name}' is already running.")
+        row = conn.execute(
+            text("SELECT started_at FROM etl_lock WHERE job_name=:job AND status='running'"),
+            {"job": job_name}
+        ).fetchone()
 
+        if row:
+            started_at = row[0]
+            age_minutes = (datetime.now(timezone.utc) - started_at).total_seconds() / 60
+
+            if age_minutes > 30:
+                logger.warning(f"⚠ Stale ETL lock found (age {age_minutes:.1f} min). Auto-clearing.")
+                conn.execute(text("DELETE FROM etl_lock WHERE job_name=:job"), {"job": job_name})
+            else:
+                raise RuntimeError(f"ETL job '{job_name}' already running.")
+        
         conn.execute(text("""
             INSERT INTO etl_lock (job_name, started_at, status)
             VALUES (:job, now(), 'running')
@@ -249,7 +261,7 @@ def parallel_fetch(start_offset: int, limit: int, start_date: Optional[datetime]
     page_counter = 0
 
     with ThreadPoolExecutor(max_workers=FETCH_WORKERS) as ex:
-        # submit initial
+        # submit initial batch of parallel requests
         for off in offsets_queue:
             fut = ex.submit(fetch_offset, session, off, limit, params_extra)
             submitted[fut] = off
@@ -259,20 +271,35 @@ def parallel_fetch(start_offset: int, limit: int, start_date: Optional[datetime]
         while submitted:
             for fut in as_completed(list(submitted.keys())):
                 off = submitted.pop(fut)
+
                 try:
                     result = fut.result()
                 except Exception as e:
                     logger.exception(f"Fetch failed for offset {off}: {e}")
                     continue
 
+                # ----------------------------------------------------
+                # NEW: #3 PAGINATION SAFETY CHECK
+                # ----------------------------------------------------
+                returned = result["returned"]
+                has_more = result["has_more"]
+
+                if returned < limit and has_more:
+                    logger.warning(
+                        f"⚠ Pagination mismatch: returned={returned} < limit={limit} "
+                        f"but has_more=True | offset={off}"
+                    )
+                # ----------------------------------------------------
+
                 yield result
                 page_counter += 1
 
+                # stop when API says no more data
                 if not result["has_more"]:
                     logger.info("No more pages indicated by API.")
                     return
 
-                # submit next offset
+                # submit next offset if limit not exceeded
                 if page_counter < max_pages:
                     fut2 = ex.submit(fetch_offset, session, next_offset, limit, params_extra)
                     submitted[fut2] = next_offset
@@ -291,55 +318,109 @@ def parallel_fetch(start_offset: int, limit: int, start_date: Optional[datetime]
 CRITICAL_FIELDS_ORDER = ["purchase_order_id"]
 CRITICAL_FIELDS_ITEM  = ["item_number", "product_id"]
 
-def transform_page(orders: list) -> pd.DataFrame:
-    flat = []
+# --- optimized transform_page ---
+import numpy as np
+
+TRANSFORM_BATCH_MIN_ROWS_FOR_CATEGORY = 1000  # only convert to category when many rows
+
+def transform_page_fast(orders: list) -> pd.DataFrame:
+    """
+    Build list-of-tuples and create DataFrame from it for speed.
+    Compute 'source_hash' using a single concatenated string column then list-comprehension md5.
+    """
+    rows = []  # list of tuples ordered to match `cols`
+    # Order of columns (tuple order) — explicit to create DataFrame faster
+    cols = [
+        "purchase_order_id", "line_item_number", "created_date", "status",
+        "supplier_id", "purchasing_group", "plant", "product_id", "description",
+        "quantity", "unit", "unit_price", "net_value", "material_group"
+    ]
+
     for order in orders:
-        if any(not order.get(k) for k in CRITICAL_FIELDS_ORDER):
+        po_id = order.get("purchase_order_id")
+        if not po_id:
             continue
+        base_created = order.get("created_date")
+        base_status = order.get("status")
+        base_supplier = order.get("supplier_id")
+        base_pgroup = order.get("purchasing_group")
 
-        base = {
-            "purchase_order_id": order.get("purchase_order_id"),
-            "created_date":     order.get("created_date"),
-            "status":           order.get("status"),
-            "supplier_id":      order.get("supplier_id"),
-            "purchasing_group": order.get("purchasing_group"),
-        }
-
-        for item in order.get("items", []):
-            if any(item.get(k) in (None, "") for k in CRITICAL_FIELDS_ITEM):
+        items = order.get("items") or []
+        for item in items:
+            item_no = item.get("item_number")
+            product = item.get("product_id")
+            if item_no in (None, "") or not product:
                 continue
+            # parse numeric safely
+            try:
+                qty = float(item.get("quantity") or 0)
+            except Exception:
+                qty = None
+            try:
+                unit_price = float(item.get("unit_price") or 0)
+            except Exception:
+                unit_price = None
+            try:
+                net_val = float(item.get("net_value") or 0)
+            except Exception:
+                net_val = None
 
-            row = {
-                **base,
-                "line_item_number": item.get("item_number"),
-                "plant":            item.get("plant"),
-                "product_id":       item.get("product_id"),
-                "description":      item.get("description"),
-                "quantity":         pd.to_numeric(item.get("quantity"), errors="coerce"),
-                "unit":             item.get("unit"),
-                "unit_price":       pd.to_numeric(item.get("unit_price"), errors="coerce"),
-                "net_value":        pd.to_numeric(item.get("net_value"), errors="coerce"),
-                "material_group":   item.get("material_group"),
-            }
+            rows.append((
+                po_id,
+                item_no,
+                base_created,
+                base_status,
+                base_supplier,
+                base_pgroup,
+                item.get("plant"),
+                product,
+                item.get("description"),
+                qty,
+                item.get("unit"),
+                unit_price,
+                net_val,
+                item.get("material_group"),
+            ))
 
-            hash_basis = {
-                k: row.get(k)
-                for k in [
-                    "purchase_order_id","line_item_number","product_id",
-                    "quantity","unit_price","net_value",
-                    "supplier_id","created_date"
-                ]
-            }
-            row["source_hash"] = hashlib.md5(
-                json.dumps(hash_basis, sort_keys=True, default=str).encode()
-            ).hexdigest()
+    if not rows:
+        return pd.DataFrame(columns=cols + ["source_hash"])
 
-            flat.append(row)
+    # Create DataFrame with explicit dtypes where possible
+    df = pd.DataFrame(rows, columns=cols)
 
-    df = pd.DataFrame(flat)
-    if not df.empty:
-        df["created_date"] = pd.to_datetime(df["created_date"], errors="coerce", utc=True)
-        df = df.dropna(subset=["purchase_order_id", "line_item_number", "product_id"])
+    # Coerce dtypes
+    df["quantity"] = pd.to_numeric(df["quantity"], errors="coerce")
+    df["unit_price"] = pd.to_numeric(df["unit_price"], errors="coerce")
+    df["net_value"] = pd.to_numeric(df["net_value"], errors="coerce")
+    df["created_date"] = pd.to_datetime(df["created_date"], errors="coerce", utc=True)
+
+    # Build concat string using vectorized str methods — faster than Python concat per row
+    # Use fillna('') to avoid NAs
+    str_cols = ["purchase_order_id", "line_item_number", "product_id",
+                "quantity", "unit_price", "net_value", "supplier_id", "created_date"]
+    # Convert numeric columns to string once (faster)
+    for c in ["quantity", "unit_price", "net_value"]:
+        df[c] = df[c].fillna("").map(lambda x: ("{:.6f}".format(x) if isinstance(x, (int, float)) else str(x)))
+
+    df["created_date"] = df["created_date"].dt.strftime("%Y-%m-%d %H:%M:%S").fillna("")
+
+    # Now use pandas vectorized str.cat progressively to avoid axis=1 agg overhead
+    concat = df["purchase_order_id"].astype(str)
+    for c in ["line_item_number", "product_id", "quantity", "unit_price", "net_value", "supplier_id", "created_date"]:
+        concat = concat.str.cat(df[c].astype(str), sep="|")
+
+    # Compute MD5 via list comprehension (fast in CPython because hashlib is C)
+    import hashlib
+    concat_list = concat.tolist()
+    hashes = [hashlib.md5(s.encode("utf-8")).hexdigest() for s in concat_list]
+    df["source_hash"] = hashes
+
+    # Optional: convert low-cardinality columns to category to save memory if chunk is large
+    if len(df) >= TRANSFORM_BATCH_MIN_ROWS_FOR_CATEGORY:
+        for c in ["supplier_id", "purchasing_group", "material_group", "plant"]:
+            if c in df.columns:
+                df[c] = df[c].astype("category")
+
     return df
 
 
@@ -385,20 +466,48 @@ def upsert_dataframe(df: pd.DataFrame, table_name: str = TARGET_TABLE, chunk_siz
 
 def run_etl():
     ensure_checkpoint_table()
-    optional_truncate_for_historical()
+    
+    # Historical truncation (if enabled)
+    optional_truncate_for_historical() 
 
     start_time = datetime.now(timezone.utc)
     total_processed = 0
     status = "success"
     error_msg = None
 
-    logger.info(f"🚀 ETL START | Mode={MODE}")
+    logger.info(f"🚀 ETL START | Job={JOB_NAME} | Mode={MODE}") 
 
     start_date = None if MODE == "historical" else datetime.now(timezone.utc) - pd.Timedelta(days=INCREMENTAL_DAYS)
-    offset = 0 if MODE == "historical" else get_checkpoint(JOB_NAME)
+    
+    # --- NEW LOGIC START ---
+    # Get both the offset AND the last time it ran
+    stored_offset, last_run_ts = get_checkpoint(JOB_NAME)
+    
+    # Get current UTC date
+    today_date = datetime.now(timezone.utc).date()
+
+    if MODE == "daily":
+        # If there was a previous run AND it was on a day BEFORE today:
+        # It means this is a fresh daily run. Reset to 0.
+        if last_run_ts and last_run_ts.date() < today_date:
+            logger.info(f"🔄 New day detected (Last run: {last_run_ts.date()}). Resetting offset to 0.")
+            offset = 0
+            # Immediately save the 0 checkpoint so if we crash at offset 50, 
+            # we resume from 50 (since date will now be today)
+            save_checkpoint(JOB_NAME, 0)
+        else:
+            # If last_run was today (resume from crash) OR never ran (first time)
+            logger.info(f"⏯️ Resuming today's run from offset {stored_offset}.")
+            offset = stored_offset
+    else:
+        # Historical mode always resumes where it left off until finished
+        offset = stored_offset
+
+    logger.info(f"Starting execution from offset: {offset}")
+    # --- NEW LOGIC END ---
 
     try:
-        acquire_lock(JOB_NAME)
+        acquire_lock(JOB_NAME) 
 
         for page in parallel_fetch(offset, CHUNK_SIZE, start_date):
             items = page["items"]
@@ -406,14 +515,19 @@ def run_etl():
                 logger.info("Empty page, skipping.")
                 continue
 
-            df = transform_page(items)
+            # Use the fast transform
+            df = transform_page_fast(items)
+
             inserted = upsert_dataframe(df)
             total_processed += inserted
+            
+            # Advance offset based on items returned
+            current_page_offset = page["offset"]
+            new_offset = current_page_offset + page["returned"]
+            
+            save_checkpoint(JOB_NAME, new_offset) 
 
-            offset += page["returned"]
-            save_checkpoint(JOB_NAME, offset)
-
-            logger.info(f"Processed offset={page['offset']}, returned={page['returned']}, total={total_processed}")
+            logger.info(f"Processed offset={page['offset']}, returned={page['returned']}, total={total_processed}, next_offset={new_offset}")
 
             if not page["has_more"]:
                 break
@@ -426,13 +540,13 @@ def run_etl():
         error_msg = str(e)
 
     finally:
-        release_lock(JOB_NAME)
+        release_lock(JOB_NAME) 
 
         end_time = datetime.now(timezone.utc)
         record_etl_run(start_time, end_time, total_processed, status, error_msg, MODE)
 
         duration = (end_time - start_time).total_seconds()
-        logger.info(f"ETL FINISHED | Status={status} | Rows={total_processed} | Duration={duration:.2f}s")
+        logger.info(f"ETL FINISHED | Job={JOB_NAME} | Status={status} | Rows={total_processed} | Duration={duration:.2f}s")
 
         ok, issues = evaluate_run(engine, MODE, total_processed, duration)
         should_email = (status != "success") or not ok
@@ -453,7 +567,7 @@ def run_etl():
                 lines += [f" - {i}" for i in issues]
 
             send_email(
-                f"[ETL] {status.upper()} - rows={total_processed}",
+                f"[ETL] {status.upper()} - {JOB_NAME}",
                 "\n".join(lines),
                 "<br>".join(lines)
             )
@@ -463,7 +577,5 @@ def run_etl():
                 concurrently=True,
                 snapshot=TAKE_DAILY_SNAPSHOT
             )
-
-
 if __name__ == "__main__":
     run_etl()
