@@ -582,152 +582,131 @@ def sku_analysis_table(
     set_cache_headers(response, etag, max_age=60)
     return payload
 
+# -------------------------------------------------
+
+# Contract Opportunities — from mv_contract_candidates
 
 # -------------------------------------------------
-# Contract Opportunities — RFM-Enhanced
-# -------------------------------------------------
+
 @router.get("/contracts/opportunities")
+
 def get_contract_opportunities(
+
     request: Request,
+
     response: Response,
+
     db: Session = Depends(get_session),
+
     limit: int = Depends(positive_limit),
+
     offset: int = Depends(non_negative_offset),
 
-    # Existing filters
-    min_consistency: Optional[float] = Query(50.0),
-    min_spend: Optional[float] = Query(20000.0),
-    freq_filter: Optional[str] = Query(None),
-    recommendation_filter: Optional[str] = Query(None),
+    min_consistency: Optional[float] = Query(50.0, description="Minimum purchase consistency percentage"),
 
-    # NEW RFM filters
-    min_r_score: Optional[int] = Query(None, ge=1, le=5),
-    min_f_score: Optional[int] = Query(None, ge=1, le=5),
-    min_m_score: Optional[int] = Query(None, ge=1, le=5),
+    min_spend: Optional[float] = Query(20000.0, description="Minimum total spend threshold"),
 
-    # NEW sort: rfm_weight, r_score, f_score, m_score
-    sort_by: Optional[str] = Query("annual_spend_projected",
-                                   description="annual_spend_projected|rfm_weight|r_score|f_score|m_score"),
-    sort_dir: Optional[str] = Query("desc"),
+    freq_filter: Optional[str] = Query(None, description="Filter by purchase frequency: VERY_HIGH|HIGH|MEDIUM|LOW"),
+
+    recommendation_filter: Optional[str] = Query(None, description="Filter by contract recommendation")
+
 ):
-    """
-    Enhanced contract opportunities using RFM scores.
-    Data source: mv_contract_candidates JOIN mv_rfm_scores.
+
     """
 
-    # -----------------------------
-    # Build WHERE clause
-    # -----------------------------
-    conditions = [
-        "c.purchase_consistency_pct >= :min_consistency",
-        "c.total_spend >= :min_spend"
-    ]
-    params = {
-        "min_consistency": min_consistency,
-        "min_spend": min_spend,
-        "limit": limit,
-        "offset": offset
-    }
+    Returns SKUs with high purchase frequency and consistency — ideal contract candidates.
+
+    Data source: mv_contract_candidates.
+
+    """
+
+
+
+    # Build conditions & params
+
+    conditions = ["purchase_consistency_pct >= :min_consistency", "total_spend >= :min_spend"]
+
+    params = {"min_consistency": min_consistency, "min_spend": min_spend, "limit": limit, "offset": offset}
+
+
 
     if freq_filter:
-        conditions.append("c.purchase_frequency = :freq_filter")
+
+        conditions.append("purchase_frequency = :freq_filter")
+
         params["freq_filter"] = freq_filter
 
     if recommendation_filter:
-        conditions.append("c.contract_recommendation = :recommendation_filter")
+
+        conditions.append("contract_recommendation = :recommendation_filter")
+
         params["recommendation_filter"] = recommendation_filter
 
-    # --- RFM filters ---
-    if min_r_score:
-        conditions.append("r.r_score >= :min_r_score")
-        params["min_r_score"] = min_r_score
-    if min_f_score:
-        conditions.append("r.f_score >= :min_f_score")
-        params["min_f_score"] = min_f_score
-    if min_m_score:
-        conditions.append("r.m_score >= :min_m_score")
-        params["min_m_score"] = min_m_score
 
-    where_clause = f"WHERE {' AND '.join(conditions)}" if conditions else ""
 
-    # -----------------------------
-    # Sorting logic
-    # -----------------------------
-    sort_map = {
-        "annual_spend_projected": "c.annual_spend_projected",
-        "r_score": "r.r_score",
-        "f_score": "r.f_score",
-        "m_score": "r.m_score",
-        "rfm_weight": "(r.r_score*0.3 + r.f_score*0.4 + r.m_score*0.3)"
-    }
+    # Use centralized helper to run MV queries
 
-    order_col = sort_map.get(sort_by, "c.annual_spend_projected")
-    order_dir = "ASC" if sort_dir.lower() == "asc" else "DESC"
-    order_clause = f"ORDER BY {order_col} {order_dir}"
+    total, data = run_mv_query(
 
-    # -----------------------------
-    # Query using JOIN
-    # -----------------------------
-    sql = f"""
-        SELECT 
-            c.product_id,
-            c.supplier_id,
-            c.avg_orders_per_month,
-            c.purchase_consistency_pct,
-            c.purchase_frequency,
-            c.contract_recommendation,
-            c.annual_spend_projected,
-            r.r_score,
-            r.f_score,
-            r.m_score,
-            (r.r_score*0.3 + r.f_score*0.4 + r.m_score*0.3)::numeric AS rfm_weight
-        FROM mv_contract_candidates c
-        LEFT JOIN mv_rfm_scores r
-        ON c.product_id = r.product_id AND c.supplier_id = r.supplier_id
-        {where_clause}
-        {order_clause}
-        LIMIT :limit OFFSET :offset
-    """
+        db,
 
-    # Count query
-    count_sql = f"""
-        SELECT COUNT(*) FROM mv_contract_candidates c
-        LEFT JOIN mv_rfm_scores r
-        ON c.product_id = r.product_id AND c.supplier_id = r.supplier_id
-        {where_clause}
-    """
+        mv_name="mv_contract_candidates",
 
-    total = db.execute(text(count_sql), params).scalar() or 0
-    rows = db.execute(text(sql), params).mappings().all()
+        where_clauses=conditions,
+
+        params=params,
+
+        order_clause="ORDER BY annual_spend_projected DESC"
+
+    )
+
+
 
     payload = {
-        "data": [dict(r) for r in rows],
+
+        "data": data,
+
         "meta": {
+
             "count": total,
+
             "limit": limit,
+
             "offset": offset,
+
             "filters": {
+
                 "min_consistency": min_consistency,
+
                 "min_spend": min_spend,
-                "freq_filter": freq_filter,
-                "recommendation_filter": recommendation_filter,
-                "min_r_score": min_r_score,
-                "min_f_score": min_f_score,
-                "min_m_score": min_m_score,
+
+                "purchase_frequency": freq_filter,
+
+                "contract_recommendation": recommendation_filter,
+
             },
-            "sort": {
-                "sort_by": sort_by,
-                "sort_dir": sort_dir,
-            },
+
         },
+
     }
 
-    etag = make_etag({"path": str(request.url.path), "filters": dict(request.query_params), "count": total})
+
+
+    etag = make_etag({
+
+        "path": str(request.url.path),
+
+        "filters": dict(request.query_params),
+
+        "count": total,
+
+    })
+
     set_cache_headers(response, etag, max_age=300)
 
-    return payload
 
 
+    return payload 
 
 # -------------------------------------------------
 # Supplier Consolidation Opportunities — from mv_supplier_consolidation
