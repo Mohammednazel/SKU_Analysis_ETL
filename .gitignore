@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+env/
+venv/
+
+# Logs / Temp
+*.log
+logs/
+temp/
+*.tmp
+
+# Data files (all ignored)
+*.csv
+*.json
+*.xlsx
+*.parquet
+*.zip
+*.gz
+*.db
+*.sqlite
+*.sqlite3
+*.pkl
+*.h5
+
+# Project-specific ignores
+data_cleaning_dev/input/*.json
+data_cleaning_dev/flattened_items.json
+data_cleaning_dev/sample_items.json
+data_cleaning_dev/audit/
+data_cleaning_dev/outputs/
+data_cleaning_dev/staging/
+data_cleaning_dev/tests/
+
+# Secrets
+.env
+*.env
+.token_cache.json
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Backups
+*.bak
+*.orig
