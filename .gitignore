@@ -1,54 +1,75 @@
-# Python
+# ===============================
+# Python / Virtual Environments
+# ===============================
 __pycache__/
 *.pyc
 *.pyo
 *.pyd
 .venv/
-env/
 venv/
+env/
 
-# Logs / Temp
+# ===============================
+# Environment & Secrets
+# ===============================
+.env
+*.env
+.token_cache.json
+
+# ===============================
+# Logs / Temp files
+# ===============================
 *.log
 logs/
 temp/
 *.tmp
 
-# Data files (all ignored)
-*.csv
-*.json
-*.xlsx
-*.parquet
-*.zip
-*.gz
+# ===============================
+# ETL Generated Data (CRITICAL)
+# ===============================
+
+# Extraction outputs
+extract/outputs/
+
+# Cleaning outputs
+outputs/
+audit/
+
+# Staging CSVs
+staging/
+
+# Historical / Daily flattened files
+**/*historical*.jsonl
+**/*daily_*.jsonl
+**/*cleaned_*.jsonl
+
+# ===============================
+# Database files (never commit)
+# ===============================
 *.db
 *.sqlite
 *.sqlite3
+
+# ===============================
+# Large Data Formats (data only)
+# ===============================
+*.parquet
 *.pkl
 *.h5
+*.zip
+*.gz
 
-# Project-specific ignores
-data_cleaning_dev/input/*.json
-data_cleaning_dev/flattened_items.json
-data_cleaning_dev/sample_items.json
-data_cleaning_dev/audit/
-data_cleaning_dev/outputs/
-data_cleaning_dev/staging/
-data_cleaning_dev/tests/
-
-# Secrets
-.env
-*.env
-.token_cache.json
-
-# IDE
+# ===============================
+# IDE / OS
+# ===============================
 .vscode/
 .idea/
 *.iml
-
-# OS
 .DS_Store
 Thumbs.db
 
+# ===============================
 # Backups
+# ===============================
 *.bak
 *.orig

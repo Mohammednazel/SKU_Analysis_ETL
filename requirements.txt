@@ -5,4 +5,3 @@ pandas
 numpy
 fastjsonschema
 psycopg2-binary>=2.9
-
