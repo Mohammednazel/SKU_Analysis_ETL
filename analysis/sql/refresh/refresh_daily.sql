@@ -1,0 +1,5 @@
+REFRESH MATERIALIZED VIEW CONCURRENTLY app_analytics.mv_sku_monthly_metrics;
+REFRESH MATERIALIZED VIEW CONCURRENTLY app_analytics.mv_supplier_monthly_metrics;
+REFRESH MATERIALIZED VIEW CONCURRENTLY app_analytics.mv_sku_price_variance;
+REFRESH MATERIALIZED VIEW CONCURRENTLY app_analytics.mv_sku_weekly_metrics;
+
