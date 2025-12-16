@@ -154,8 +154,12 @@ def process_files(file_list):
                     
                     if status == "success":
                         po_id = clean_data.get("purchase_order_id")
+                        # Extract Header Info
+                        hdr = clean_data.get("_header_json", {})
+                        
+                        # --- PREPARE HEADER ---
+                        # Tuple MUST match SQL columns order
                         if po_id and po_id not in cleaned_headers:
-                            hdr = clean_data.get("_header_json", {})
                             cleaned_headers[po_id] = (
                                 po_id,
                                 clean_data.get("order_date_iso"),
@@ -169,9 +173,11 @@ def process_files(file_list):
                                 hdr.get("currency"),
                                 hdr.get("status"),
                                 clean_data.get("cdate_iso"),
-                                safe_json_dump(hdr)
+                                safe_json_dump(hdr) # _raw_json
                             )
 
+                        # --- PREPARE ITEM ---
+                        # Tuple MUST match SQL columns order
                         if clean_data.get("item_id"):
                             item_tuple = (
                                 clean_data.get("purchase_order_id"),
@@ -181,14 +187,15 @@ def process_files(file_list):
                                 clean_data.get("_quantity_float"),
                                 clean_data.get("unit_of_measure"),
                                 clean_data.get("_unit_price_float"),
-                                clean_data.get("_total_float"),
+                                clean_data.get("_total_float"), # total
                                 clean_data.get("currency"),
                                 clean_data.get("order_date_iso"),
                                 clean_data.get("cdate_iso"),
+                                hdr.get("supplier_id"), # supplier_id (New!)
                                 clean_data.get("plant"),
                                 clean_data.get("material_group"),
                                 clean_data.get("product_id"),
-                                safe_json_dump(clean_data.get("_item_json"))
+                                safe_json_dump(clean_data.get("_item_json")) # _raw_json
                             )
                             cleaned_items.append(item_tuple)
                             
@@ -211,30 +218,27 @@ def insert_to_db(headers, items):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # --- CORRECTED TABLE NAME: purchase_order_headers ---
+        # --- HEADERS: Using Composite Key (purchase_order_id, order_date) ---
         header_sql = """
             INSERT INTO app_core.purchase_order_headers (
                 purchase_order_id, order_date, buyer_company_name, buyer_email,
                 supplier_company_name, supplier_id, subtotal, tax, grand_amount,
-                currency, status, created_date, raw_json
+                currency, status, cdate, _raw_json
             ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (purchase_order_id) DO NOTHING;
+            ON CONFLICT (purchase_order_id, order_date) DO NOTHING;
         """
         if headers:
             logger.info(f"⏳ Inserting {len(headers)} Headers...")
             execute_batch(cur, header_sql, headers)
 
-        # --- CORRECTED TABLE NAME: purchase_order_items ---
+        # --- ITEMS: Insert Only (No Conflict Clause for Partitioned Table without PK) ---
+        # Fixed Columns: total, cdate, supplier_id, _raw_json
         item_sql = """
             INSERT INTO app_core.purchase_order_items (
                 purchase_order_id, purchase_order_no, item_id, description,
-                quantity, unit_of_measure, unit_price, total_amount, currency,
-                order_date, created_date, plant, material_group, product_id, raw_json
-            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-            ON CONFLICT (purchase_order_id, item_id) DO UPDATE SET
-                quantity = EXCLUDED.quantity,
-                total_amount = EXCLUDED.total_amount,
-                unit_price = EXCLUDED.unit_price;
+                quantity, unit_of_measure, unit_price, total, currency,
+                order_date, cdate, supplier_id, plant, material_group, product_id, _raw_json
+            ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s);
         """
         if items:
             logger.info(f"⏳ Inserting {len(items)} Items...")
