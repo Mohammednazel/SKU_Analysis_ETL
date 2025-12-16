@@ -21,7 +21,7 @@ def split_date_range(start_str, end_str, interval_days=30):
     and yields small 30-day chunks (start, end).
     """
     start_date = datetime.strptime(start_str, "%Y-%m-%dT%H:%M:%S")
-    end_date = dateti me.strptime(end_str, "%Y-%m-%dT%H:%M:%S")
+    end_date = datetime.strptime(end_str, "%Y-%m-%dT%H:%M:%S")
     
     current = start_date
     while current < end_date:
