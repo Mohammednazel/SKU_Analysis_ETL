@@ -17,8 +17,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy full project
 COPY . .
 
-# Ensure pipeline script is executable
+# Ensure pipeline scripts are executable
 RUN chmod +x run_daily_pipeline.sh
+RUN chmod +x run_historical_pipeline.sh
 
 # Default command = API
 # (ACA Job will override this with run_daily_pipeline.sh)

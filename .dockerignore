@@ -1,0 +1,12 @@
+.git
+.venv
+**/outputs/
+**/staging/
+**/data/
+**/raw/
+**/flattened/
+**/*.json
+**/*.jsonl
+**/*.csv
+**/*.xlsx
+**/*.zip
