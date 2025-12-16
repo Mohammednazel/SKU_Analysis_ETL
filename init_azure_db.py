@@ -11,7 +11,7 @@ DB_HOST = os.getenv("DB_HOST")
 DB_USER = os.getenv("DB_USER")
 DB_PASS = os.getenv("DB_PASS")
 # We start by connecting to 'postgres' to create the new DB
-TARGET_DB = "procurement"
+TARGET_DB = "postgres"
 
 def create_database():
     print(f"🔌 Connecting to {DB_HOST} (Secure Mode)...")
