@@ -10,22 +10,24 @@ def request_page(headers, body, skiptoken):
     if skiptoken > 0:
         body["skiptoken"] = str(skiptoken)
 
-    for attempt in range(3):
+    for attempt in range(5):  # INCREASED RETRIES FROM 3 TO 5
         try:
             resp = requests.get(
                 NADEC_PO_URL,
                 headers=headers,
                 json=body,
-                timeout=TIMEOUT
+                timeout=120  # <--- CHANGED: Increased from 30s (TIMEOUT) to 120s
             )
             if resp.status_code == 429:
-                time.sleep(5)
+                print(f"[WARN] 429 Too Many Requests. Sleeping...")
+                time.sleep(10)
                 continue
             resp.raise_for_status()
             return resp.json()
         except Exception as e:
-            print(f"[WARN] retry due to {e}")
-            time.sleep(2 + attempt)
+            print(f"[WARN] retry {attempt+1}/5 due to {e}")
+            time.sleep(5 + attempt * 2) # INCREASED SLEEP TIME
+
     raise RuntimeError("Page fetch failed after retries")
 
 def fetch_and_save_pages(from_cdate, to_cdate, label="extract"):
