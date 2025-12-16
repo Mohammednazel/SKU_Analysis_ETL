@@ -1,8 +1,10 @@
 #!/bin/bash
 echo "🚀 Starting HISTORICAL Load..."
 
+# CRITICAL FIX: Tell Python where the root 'extract' folder lives
+export PYTHONPATH=/app
+
 # Run the smart python script
-# It handles Extract -> Transform -> Load internally now.
 python /app/extract/sap/run_historical_extract.py
 
 exit_code=$?
