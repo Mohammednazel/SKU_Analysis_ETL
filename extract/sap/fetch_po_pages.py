@@ -44,7 +44,15 @@ def fetch_and_save_pages(from_cdate, to_cdate, label="extract"):
     saved_files = []
 
     for page in range(1, MAX_PAGES + 1):
-        data = request_page(headers, body, skiptoken)
+        try:
+            # 🛡️ THE SAFETY NET: Try to get the page
+            data = request_page(headers, body, skiptoken)
+            
+        except RuntimeError as e:
+            # If SAP crashes, Log it, STOP extracting, but RETURN what we have
+            print(f"⚠️ [PARTIAL SUCCESS] SAP Failed at page {page}: {e}")
+            print(f"✅ Stopping this batch, but keeping {len(saved_files)} saved pages.")
+            break 
 
         rows = []
         if "d" in data and "results" in data["d"]:

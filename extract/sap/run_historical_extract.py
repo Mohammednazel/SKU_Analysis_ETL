@@ -1,47 +1,72 @@
-import os
-import argparse
+# extract/sap/run_historical_extract.py
+import logging
+from datetime import datetime, timedelta
+# Ensure these variables are set to your FULL 2-year range in config
+from extract.sap.extract_config import HISTORICAL_START_DATE, HISTORICAL_END_DATE
 from extract.sap.fetch_po_pages import fetch_and_save_pages
-from extract.sap.flatten_pages_streaming import flatten_page_file
-# We keep FLAT_DIR as a fallback default, though we likely won't use it in Docker
-from extract.sap.extract_config import FLAT_DIR
+from extract.transform.clean_po_data import process_files
 
-# Default Date Range (Can also be parameterized if needed later)
-FROM = "2024-01-01T00:00:00"
+# Setup logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
+logger = logging.getLogger(__name__)
 
-TO   = "2024-03-07T00:00:00"  # Updated to cover full year or relevant history
+def split_date_range(start_str, end_str, interval_days=30):
+    """Generates (start, end) tuples for 30-day chunks."""
+    # Parse the strings into Date Objects
+    start_date = datetime.strptime(start_str, "%Y-%m-%dT%H:%M:%S")
+    end_date = datetime.strptime(end_str, "%Y-%m-%dT%H:%M:%S")
+    
+    current = start_date
+    while current < end_date:
+        next_hop = current + timedelta(days=interval_days)
+        if next_hop > end_date:
+            next_hop = end_date
+        
+        # Format back to string required by SAP
+        yield (
+            current.strftime("%Y-%m-%dT%H:%M:%S"),
+            next_hop.strftime("%Y-%m-%dT%H:%M:%S")
+        )
+        current = next_hop
 
 def main():
-    parser = argparse.ArgumentParser(description="Run Historical Extraction")
-    parser.add_argument("--output", help="Path to save the flattened JSONL file", required=False)
-    args = parser.parse_args()
+    logger.info(f"🚀 Starting Smart Historical Load: {HISTORICAL_START_DATE} to {HISTORICAL_END_DATE}")
+    
+    # 1. Generate the list of monthly chunks
+    chunks = list(split_date_range(HISTORICAL_START_DATE, HISTORICAL_END_DATE))
+    logger.info(f"📅 Split workload into {len(chunks)} monthly batches.")
 
-    # logic: If --output is provided, use it. Otherwise, fallback to default.
-    if args.output:
-        output_file = args.output
+    total_files = []
+
+    # 2. Loop through each chunk
+    for i, (chunk_start, chunk_end) in enumerate(chunks):
+        batch_num = i + 1
+        logger.info(f"🔄 Batch {batch_num}/{len(chunks)}: Fetching {chunk_start} -> {chunk_end}...")
+        
+        try:
+            # Fetch data for JUST this month
+            # We use a unique label (hist_batch_1, hist_batch_2) to avoid filename collisions
+            batch_files = fetch_and_save_pages(chunk_start, chunk_end, label=f"hist_batch_{batch_num}")
+            
+            if batch_files:
+                logger.info(f"✅ Batch {batch_num} Success: Saved {len(batch_files)} files.")
+                total_files.extend(batch_files)
+            else:
+                logger.warning(f"⚠️ Batch {batch_num} returned no data (might be expected).")
+
+        except Exception as e:
+            # If one batch totally fails (e.g. auth error), log it and try the next month
+            logger.error(f"❌ Batch {batch_num} Failed: {e}. Continuing to next batch...")
+
+    logger.info(f"🏁 All extraction batches complete. Total files collected: {len(total_files)}")
+
+    # 3. Process all downloaded files (ETL)
+    if total_files:
+        logger.info("⚙️ Transforming and Loading data into DB...")
+        process_files(total_files)
+        logger.info("🎉 Historical Load Complete!")
     else:
-        output_file = f"{FLAT_DIR}/historical_flattened.jsonl"
-
-    print(f"\n=== HISTORICAL EXTRACTION STARTED ===")
-    print(f"📅 Date Range: {FROM} to {TO}")
-    print(f"📂 Output File: {output_file}")
-
-    # Ensure the directory exists
-    os.makedirs(os.path.dirname(output_file), exist_ok=True)
-
-    # Remove old file if it exists to start fresh
-    if os.path.exists(output_file):
-        os.remove(output_file)
-
-    # Step 1 — streaming fetch (This saves raw JSON pages to disk/temp)
-    # Note: fetch_and_save_pages writes to its own internal raw directory. 
-    # That is fine as long as step 2 can read them.
-    files = fetch_and_save_pages(FROM, TO, label="historical")
-
-    # Step 2 — streaming flatten (Reads raw pages, writes to output_file)
-    for f in files:
-        flatten_page_file(f, output_file)
-
-    print("\n=== HISTORICAL EXTRACTION COMPLETE ===")
+        logger.error("❌ No files were downloaded in any batch.")
 
 if __name__ == "__main__":
     main()

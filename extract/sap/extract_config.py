@@ -26,3 +26,12 @@ LOG_DIR       = "extract/outputs/logs"
 os.makedirs(RAW_DIR, exist_ok=True)
 os.makedirs(FLAT_DIR, exist_ok=True)
 os.makedirs(LOG_DIR, exist_ok=True)
+
+
+# extract/sap/extract_config.py
+
+# ... (other config) ...
+
+# Ensure these match the format exactly
+HISTORICAL_START_DATE = "2024-01-01T00:00:00"
+HISTORICAL_END_DATE = "2024-03-01T00:00:00"
