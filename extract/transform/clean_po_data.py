@@ -11,7 +11,6 @@ from psycopg2.extras import execute_batch
 
 # Import DB Utilities and Config
 from extract.common.db_utils import get_db_connection
-# We need the threshold to filter out "fake" test POs
 from extract.sap.extract_config import REAL_PO_THRESHOLD
 
 logger = logging.getLogger(__name__)
@@ -45,7 +44,7 @@ def safe_json_dump(obj):
     if not obj: return "{}"
     return json.dumps(obj, ensure_ascii=False).replace("\n", " ").replace("\r", "")
 
-# --- FLATTENING LOGIC (Integrated from your flattening script) ---
+# --- FLATTENING LOGIC ---
 def flatten_raw_data(raw_headers_list):
     """
     Takes a list of Raw SAP Header objects (nested JSON).
@@ -56,21 +55,18 @@ def flatten_raw_data(raw_headers_list):
     for hdr in raw_headers_list:
         po_id = hdr.get("purchase_order_id")
         
-        # 1. Filter out Test/Fake POs (e.g. ID < 4500000000)
         try:
             if int(po_id) < REAL_PO_THRESHOLD:
                 continue
         except:
             continue
 
-        # 2. Extract Items from nested structure
         items = []
         if "to_items" in hdr and isinstance(hdr["to_items"], dict):
             items = hdr["to_items"].get("results", [])
         elif "to_items" in hdr and isinstance(hdr["to_items"], list):
             items = hdr["to_items"]
 
-        # 3. Handle POs with NO Items (Header only)
         if not items:
             flattened_rows.append({
                 "purchase_order_id": po_id,
@@ -89,14 +85,12 @@ def flatten_raw_data(raw_headers_list):
             })
             continue
 
-        # 4. Flatten Valid Items
         for item in items:
             flattened_rows.append({
                 "purchase_order_id": po_id,
                 "purchase_order_no": item.get("purchase_order_no"),
                 "item_id": item.get("item_id"),
                 "description": item.get("description"),
-                # Handle the typo 'quanity' vs 'quantity' here
                 "quantity": item.get("quanity") or item.get("quantity"),
                 "unit_of_measure": item.get("unit_of_measure"),
                 "unit_price": item.get("unit_price"),
@@ -112,18 +106,11 @@ def flatten_raw_data(raw_headers_list):
 
 # --- CLEANING LOGIC ---
 def clean_row(row):
-    # Ensure header/item json exists
     if "_header_json" not in row: row["_header_json"] = {}
     
-    # Validation
-    po_no = row.get("purchase_order_no")
-    # Note: We allow processing even if PO No is missing, provided we have an ID
-    
-    # Date Parsing
     row["order_date_iso"] = parse_sap_date(row.get("order_date"))
     row["cdate_iso"]      = parse_sap_date(row.get("cdate"))
 
-    # Numeric Cleaning
     qty   = clean_numeric(row.get("quantity"))
     price = clean_numeric(row.get("unit_price"))
     total = clean_numeric(row.get("total"))
@@ -132,13 +119,11 @@ def clean_row(row):
     row["_unit_price_float"] = price if price is not None else 0.0
     row["_total_float"]      = total if total is not None else 0.0
 
-    # Logic Check
     if qty and price and total:
         calc = qty * price
         if not math.isclose(calc, total, abs_tol=TOTAL_TOLERANCE):
             row["_total_mismatch"] = True
     
-    # Fill Nulls
     for field in ["plant", "material_group", "product_id"]:
         if field not in row: row[field] = None
 
@@ -148,36 +133,26 @@ def clean_row(row):
 
 # --- MAIN PIPELINE FUNCTION ---
 def process_files(file_list):
-    """
-    Reads raw JSON files -> Flattens -> Cleans -> Inserts into DB.
-    """
     logger.info(f"⚙️ Starting Transformation for {len(file_list)} files...")
     
     cleaned_headers = {}
     cleaned_items = []
     
-    # 1. READ & FLATTEN
     for file_path in file_list:
         if not os.path.exists(file_path):
             continue
             
         with open(file_path, 'r', encoding='utf-8') as f:
             try:
-                # Read the file containing a list of HEADERS
                 raw_headers = json.load(f)
-                
-                # If it's a dict, wrap in list
                 if isinstance(raw_headers, dict): raw_headers = [raw_headers]
                 
-                # --- FLATTEN STEP ---
                 flat_data = flatten_raw_data(raw_headers)
                 
-                # --- CLEAN STEP ---
                 for flat_row in flat_data:
                     clean_data, status = clean_row(flat_row)
                     
                     if status == "success":
-                        # Prepare Header
                         po_id = clean_data.get("purchase_order_id")
                         if po_id and po_id not in cleaned_headers:
                             hdr = clean_data.get("_header_json", {})
@@ -197,7 +172,6 @@ def process_files(file_list):
                                 safe_json_dump(hdr)
                             )
 
-                        # Prepare Item (Only if item_id exists)
                         if clean_data.get("item_id"):
                             item_tuple = (
                                 clean_data.get("purchase_order_id"),
@@ -225,10 +199,9 @@ def process_files(file_list):
     logger.info(f"✅ Data Processed. Headers: {len(cleaned_headers)}, Items: {len(cleaned_items)}")
     
     if not cleaned_items and not cleaned_headers:
-        logger.warning("⚠️ No valid data found after flattening/cleaning. Skipping DB insert.")
+        logger.warning("⚠️ No valid data found. Skipping DB insert.")
         return True
 
-    # 2. INSERT INTO DATABASE
     insert_to_db(list(cleaned_headers.values()), cleaned_items)
     return True
 
@@ -238,9 +211,9 @@ def insert_to_db(headers, items):
         conn = get_db_connection()
         cur = conn.cursor()
 
-        # Insert Headers
+        # --- CORRECTED TABLE NAME: purchase_order_headers ---
         header_sql = """
-            INSERT INTO app_core.po_headers (
+            INSERT INTO app_core.purchase_order_headers (
                 purchase_order_id, order_date, buyer_company_name, buyer_email,
                 supplier_company_name, supplier_id, subtotal, tax, grand_amount,
                 currency, status, created_date, raw_json
@@ -251,9 +224,9 @@ def insert_to_db(headers, items):
             logger.info(f"⏳ Inserting {len(headers)} Headers...")
             execute_batch(cur, header_sql, headers)
 
-        # Insert Items
+        # --- CORRECTED TABLE NAME: purchase_order_items ---
         item_sql = """
-            INSERT INTO app_core.po_items (
+            INSERT INTO app_core.purchase_order_items (
                 purchase_order_id, purchase_order_no, item_id, description,
                 quantity, unit_of_measure, unit_price, total_amount, currency,
                 order_date, created_date, plant, material_group, product_id, raw_json
