@@ -1,55 +1,62 @@
 # extract/sap/token_manager.py
+import requests
+import time
+import logging
+import os
+from extract.sap.extract_config import (
+    SAP_TOKEN_URL, CLIENT_ID, CLIENT_SECRET, TIMEOUT
+)
 
-import json, os, time, requests
-from extract.sap.extract_config import TOKEN_URL, CLIENT_ID, CLIENT_SECRET, TIMEOUT
+logger = logging.getLogger(__name__)
 
-TOKEN_CACHE = "extract/.token_cache.json"
+# Global variable to store token in memory (safer than files in containers)
+_TOKEN_CACHE = {
+    "access_token": None,
+    "expires_at": 0
+}
 
-def load_cached_token():
-    if not os.path.exists(TOKEN_CACHE):
-        return None
+def get_sap_token(force_refresh=False):
+    """
+    Retrieves a valid SAP OAuth2 token.
+    Uses in-memory caching to reuse the token during this job run.
+    """
+    global _TOKEN_CACHE
+    
+    current_time = time.time()
+    
+    # 1. Check Cache (Reuse if valid and not expiring in next 60s)
+    if not force_refresh and _TOKEN_CACHE["access_token"]:
+        if current_time < (_TOKEN_CACHE["expires_at"] - 60):
+            return _TOKEN_CACHE["access_token"]
 
-    try:
-        data = json.load(open(TOKEN_CACHE))
-        if data.get("expires_at", 0) > time.time():
-            return data["token"]
-    except:
-        return None
-
-    return None
-
-
-def save_token(token, expires_in):
-    data = {
-        "token": token,
-        "expires_at": time.time() + expires_in - 10
+    logger.info("🔑 Fetching new SAP Access Token...")
+    
+    # 2. Prepare Request
+    payload = {
+        "grant_type": "client_credentials",
+        "client_id": CLIENT_ID,
+        "client_secret": CLIENT_SECRET
     }
-    json.dump(data, open(TOKEN_CACHE, "w"))
+    
+    # 3. Call API
+    try:
+        response = requests.post(SAP_TOKEN_URL, data=payload, timeout=TIMEOUT)
+        response.raise_for_status()
+        
+        data = response.json()
+        access_token = data.get("access_token")
+        expires_in = int(data.get("expires_in", 3600))  # Default 1 hr
+        
+        if not access_token:
+            raise ValueError("Token response did not contain 'access_token'")
+            
+        # 4. Update Cache
+        _TOKEN_CACHE["access_token"] = access_token
+        _TOKEN_CACHE["expires_at"] = current_time + expires_in
+        
+        logger.info("✅ Token acquired successfully.")
+        return access_token
 
-
-def fetch_token():
-    cached = load_cached_token()
-    if cached:
-        print("[TOKEN] Using cached token.")
-        return cached
-
-    print("[TOKEN] Fetching new token...")
-    resp = requests.post(
-        TOKEN_URL,
-        data={
-            "grant_type": "client_credentials",
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET
-        },
-        timeout=TIMEOUT
-    )
-    resp.raise_for_status()
-    data = resp.json()
-
-    token = data["access_token"]
-    expires = data.get("expires_in", 3600)
-
-    save_token(token, expires)
-    print("[TOKEN] Token stored.")
-
-    return token
+    except Exception as e:
+        logger.error(f"❌ Failed to retrieve SAP Token: {e}")
+        raise e
