@@ -14,17 +14,15 @@ env/
 # ===============================
 .env
 *.env
-# Exception: Keep template files so colleagues know what variables to set
-!*_template.env
 .token_cache.json
 
 # ===============================
-# Logs / Temp files
+# Folders to COMPLETELY IGNORE
+# (Dev labs, old utils, and local configs)
 # ===============================
-*.log
-logs/
-temp/
-*.tmp
+configs/
+data_cleaning_dev/
+etl_common/
 
 # ===============================
 # ETL Generated Data (CRITICAL)
@@ -35,21 +33,11 @@ extract/outputs/
 # Block cleaning outputs
 outputs/
 
-# Block staging CSVs (Postgres bulk insert files)
+# Block staging CSVs
 staging/
 
 # Block Audit logs
 audit/
-
-# ===============================
-# Development / Lab Data
-# ===============================
-# Block heavy data inside the dev folder
-data_cleaning_dev/input/
-data_cleaning_dev/staging/
-data_cleaning_dev/*.json
-data_cleaning_dev/*.csv
-data_cleaning_dev/__pycache__/
 
 # ===============================
 # Large Data Formats (Global Safety Net)
@@ -60,6 +48,8 @@ data_cleaning_dev/__pycache__/
 *.zip
 *.gz
 *.jsonl
+*.csv
+*.xlsx
 
 # ===============================
 # Database files
@@ -80,8 +70,6 @@ Thumbs.db
 # ===============================
 # Azure / Docker Specific
 # ===============================
-# Ignore local testing scripts if you don't want them in the repo
-# (You moved these to scripts/, so we can ignore the root ones if they reappear)
 verify_data_in_Azure_db.py
 test_azure_tables.py
 flatten_po.py
