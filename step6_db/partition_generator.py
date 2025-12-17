@@ -10,7 +10,7 @@ load_dotenv()
 DB = {
     "host": os.getenv("DB_HOST", "localhost"),
     "port": os.getenv("DB_PORT", "5432"),
-    "name": os.getenv("DB_NAME", "procurement"),
+    "name": os.getenv("DB_NAME", "postgres"),
     "user": os.getenv("DB_USER", "postgres"),
     "password": os.getenv("DB_PASS"),
 }
@@ -26,7 +26,8 @@ def connect():
         port=DB["port"],
         dbname=DB["name"],
         user=DB["user"],
-        password=DB["password"]
+        password=DB["password"],
+        sslmode="require"
     )
 
 def create_partition_sql(table, year, month):
