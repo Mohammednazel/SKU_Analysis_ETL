@@ -3,6 +3,7 @@ import os
 import requests
 import json
 import logging
+import time
 from extract.sap.extract_config import (
     SAP_PO_URL, TIMEOUT, RAW_DIR, PAGE_SIZE, MAX_PAGES
 )
@@ -12,58 +13,74 @@ logger = logging.getLogger(__name__)
 
 def fetch_po_data_range(start_date_str, end_date_str, batch_label="batch"):
     """
-    Fetches PO data using standard OData parameters.
-    CRITICAL FIX: Includes $expand=to_items to prevent Server 500 Errors.
+    Fetches PO data using the 'Old Code' strategy: 
+    GET request with JSON BODY.
     """
     saved_files = []
     token = get_sap_token()
     
-    logger.info(f"🔄 Fetching data from {start_date_str} to {end_date_str}...")
+    logger.info(f"🔄 Fetching data from {start_date_str} to {end_date_str} using JSON Body strategy...")
 
-    # We use a session for efficiency
-    session = requests.Session()
+    # We use a numeric skiptoken because that is how your old code worked
+    skiptoken = 0
     
     for page in range(1, MAX_PAGES + 1):
-        # Calculate Offset ($skip)
-        offset = (page - 1) * PAGE_SIZE
-
-        # Standard OData Parameters
-        # This matches your Postman logic but uses standard URL params
-        params = {
-            "$format": "json",
-            "$expand": "to_items",  # <--- PREVENTS 500 ERROR
-            "$top": PAGE_SIZE,
-            "$skip": offset
+        # 1. Construct the JSON Body (Mimicking your working Postman/Old Script)
+        # Note: We do NOT use URL parameters like $top/$skip. We use the body.
+        payload = {
+            "expand": "to_items",   # Critical: No "$" prefix
+            "skiptoken": str(skiptoken)
         }
+        
+        # Optional: If your API supports date filters in the body, we could add them.
+        # But since your Postman worked without them, we will fetch raw and filter in Python
+        # to be 100% safe and avoid 500 errors.
 
         headers = {
             "Authorization": f"Bearer {token}",
-            "Accept": "application/json"
+            "Accept": "application/json",
+            "Content-Type": "application/json"
         }
 
         try:
-            # Simple Retry Logic for 500s
+            # RETRY LOGIC for 500 Errors
             response = None
             for attempt in range(3):
-                response = session.get(SAP_PO_URL, params=params, headers=headers, timeout=TIMEOUT)
-                
-                if response.status_code == 401:
-                    logger.warning("🔄 Token expired. Refreshing...")
-                    token = get_sap_token(force_refresh=True)
-                    headers["Authorization"] = f"Bearer {token}"
-                    continue
-                
-                if response.status_code >= 500:
-                    logger.warning(f"⚠️ Server Error {response.status_code}. Retrying ({attempt+1}/3)...")
-                    import time; time.sleep(2)
-                    continue
-                
-                break # Success or 4xx error
+                try:
+                    # CRITICAL: Sending json=payload in a GET request
+                    response = requests.get(
+                        SAP_PO_URL, 
+                        headers=headers, 
+                        json=payload, 
+                        timeout=TIMEOUT
+                    )
+                    
+                    if response.status_code == 401:
+                        logger.warning("🔄 Token expired. Refreshing...")
+                        token = get_sap_token(force_refresh=True)
+                        headers["Authorization"] = f"Bearer {token}"
+                        continue
+                    
+                    if response.status_code >= 500:
+                        logger.warning(f"⚠️ Server Error {response.status_code} on page {page}. Retrying ({attempt+1}/3)...")
+                        time.sleep(5)
+                        continue
+                    
+                    # If we get here, it's not a 500 or 401
+                    response.raise_for_status()
+                    break 
 
-            response.raise_for_status()
+                except requests.exceptions.RequestException as e:
+                    logger.warning(f"⚠️ Network error: {e}. Retrying...")
+                    time.sleep(2)
+            
+            # If still failing after retries
+            if response is None or response.status_code != 200:
+                raise Exception(f"Failed to fetch page {page}. Final status: {response.status_code if response else 'None'}")
+
             data = response.json()
             
-            # 1. Extract Results
+            # 2. Extract Results
             results = []
             if "d" in data:
                 d_data = data["d"]
@@ -72,19 +89,23 @@ def fetch_po_data_range(start_date_str, end_date_str, batch_label="batch"):
                 elif "results" in d_data:
                     results = d_data["results"]
             
-            # 2. Stop if empty
+            # 3. Stop if empty
             if not results:
                 logger.info(f"✅ No more data at page {page}. Stopping.")
                 break
 
-            # 3. Filter & Save
+            # 4. Filter & Save
             filtered_results = []
             for item in results:
+                # Flexible date finder
                 item_date = item.get("order_date") or item.get("cdate") or item.get("created_at")
+                
                 if item_date:
+                    # String comparison for ISO dates
                     if start_date_str <= str(item_date) < end_date_str:
                         filtered_results.append(item)
                 else:
+                    # Safe fallback
                     filtered_results.append(item)
 
             if filtered_results:
@@ -94,6 +115,15 @@ def fetch_po_data_range(start_date_str, end_date_str, batch_label="batch"):
                     json.dump(filtered_results, f, ensure_ascii=False)
                 saved_files.append(filepath)
                 logger.info(f"💾 Saved {len(filtered_results)} rows to {filename}")
+
+            # 5. Advance Pagination (Old Code Logic)
+            # Increment by PAGE_SIZE
+            skiptoken += PAGE_SIZE
+            
+            # Protection against infinite loops if server ignores skiptoken
+            if len(results) < 5: # If we got fewer than 5 items, we are likely done
+                 logger.info("✅ Result count low, assuming end of data.")
+                 break
 
         except Exception as e:
             logger.error(f"❌ Batch crashed at page {page}: {e}")
