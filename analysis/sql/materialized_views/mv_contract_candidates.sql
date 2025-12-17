@@ -1,4 +1,4 @@
-DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_contract_candidates;
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_contract_candidates CASCADE;
 
 CREATE MATERIALIZED VIEW app_analytics.mv_contract_candidates AS
 WITH scored AS (

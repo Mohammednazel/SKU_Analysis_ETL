@@ -1,12 +1,21 @@
 .git
 .venv
-**/outputs/
-**/staging/
-**/data/
-**/raw/
-**/flattened/
-**/*.json
-**/*.jsonl
-**/*.csv
-**/*.xlsx
-**/*.zip
+.env
+.token_cache.json
+__pycache__
+*.pyc
+
+# Ignore Data & Outputs
+extract/outputs/
+outputs/
+staging/
+logs/
+
+# Ignore Dev & Admin folders (CRITICAL CLEANUP)
+data_cleaning_dev/
+step6_db/
+scripts/
+
+# Ignore local IDE files
+.vscode/
+.idea/

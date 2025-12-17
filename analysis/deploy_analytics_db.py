@@ -37,14 +37,16 @@ SQL_EXECUTION_ORDER = [
 ]
 
 def get_db_engine():
-    user = quote_plus(os.getenv("DB_USER", ""))
+    user = quote_plus(os.getenv("DB_USER", "sku_admin"))
     pw   = quote_plus(os.getenv("DB_PASS", ""))
-    host = os.getenv("DB_HOST", "localhost")
+    host = os.getenv("DB_HOST", "psql-sku-analysis-test.postgres.database.azure.com")
     port = os.getenv("DB_PORT", "5432")
-    db   = os.getenv("DB_NAME", "procurement")
+    
+    # FIX: Changed default from 'procurement' to 'postgres'
+    db   = os.getenv("DB_NAME", "postgres") 
+    
     url = f"postgresql://{user}:{pw}@{host}:{port}/{db}"
     
-    # Set isolation_level="AUTOCOMMIT" to allow CREATE MATERIALIZED VIEW commands
     return create_engine(url, isolation_level="AUTOCOMMIT")
 
 def run_sql_file(engine, filepath):

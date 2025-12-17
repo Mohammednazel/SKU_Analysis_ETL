@@ -1,3 +1,5 @@
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_supplier_tiering CASCADE;
+
 CREATE MATERIALIZED VIEW app_analytics.mv_supplier_tiering AS
 SELECT
     supplier_name,

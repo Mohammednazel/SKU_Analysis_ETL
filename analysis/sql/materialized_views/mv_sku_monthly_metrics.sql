@@ -1,3 +1,6 @@
+
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_sku_monthly_metrics CASCADE;
+
 CREATE MATERIALIZED VIEW app_analytics.mv_sku_monthly_metrics AS
 SELECT
     unified_sku_id,

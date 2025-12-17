@@ -1,3 +1,5 @@
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_sku_price_variance CASCADE;
+
 CREATE MATERIALIZED VIEW app_analytics.mv_sku_price_variance AS
 SELECT
     unified_sku_id,

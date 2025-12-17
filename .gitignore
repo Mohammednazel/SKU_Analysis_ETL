@@ -14,6 +14,8 @@ env/
 # ===============================
 .env
 *.env
+# Exception: Keep template files so colleagues know what variables to set
+!*_template.env
 .token_cache.json
 
 # ===============================
@@ -27,37 +29,44 @@ temp/
 # ===============================
 # ETL Generated Data (CRITICAL)
 # ===============================
-
-# Extraction outputs
+# Block all extraction outputs (JSONs/JSONLs)
 extract/outputs/
 
-# Cleaning outputs
+# Block cleaning outputs
 outputs/
-audit/
 
-# Staging CSVs
+# Block staging CSVs (Postgres bulk insert files)
 staging/
 
-# Historical / Daily flattened files
-**/*historical*.jsonl
-**/*daily_*.jsonl
-**/*cleaned_*.jsonl
+# Block Audit logs
+audit/
 
 # ===============================
-# Database files (never commit)
+# Development / Lab Data
 # ===============================
-*.db
-*.sqlite
-*.sqlite3
+# Block heavy data inside the dev folder
+data_cleaning_dev/input/
+data_cleaning_dev/staging/
+data_cleaning_dev/*.json
+data_cleaning_dev/*.csv
+data_cleaning_dev/__pycache__/
 
 # ===============================
-# Large Data Formats (data only)
+# Large Data Formats (Global Safety Net)
 # ===============================
 *.parquet
 *.pkl
 *.h5
 *.zip
 *.gz
+*.jsonl
+
+# ===============================
+# Database files
+# ===============================
+*.db
+*.sqlite
+*.sqlite3
 
 # ===============================
 # IDE / OS
@@ -69,18 +78,10 @@ staging/
 Thumbs.db
 
 # ===============================
-# Backups
+# Azure / Docker Specific
 # ===============================
-*.bak
-*.orig
-
-
-
-
-
-# Azure testing files
-
-
+# Ignore local testing scripts if you don't want them in the repo
+# (You moved these to scripts/, so we can ignore the root ones if they reappear)
 verify_data_in_Azure_db.py
 test_azure_tables.py
-
+flatten_po.py

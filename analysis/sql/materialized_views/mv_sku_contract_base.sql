@@ -1,3 +1,6 @@
+
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_sku_contract_base CASCADE;
+
 CREATE MATERIALIZED VIEW app_analytics.mv_sku_contract_base AS
 SELECT
     unified_sku_id,

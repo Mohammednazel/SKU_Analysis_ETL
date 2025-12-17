@@ -1,3 +1,6 @@
+
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_global_kpis CASCADE;
+
 CREATE MATERIALIZED VIEW app_analytics.mv_global_kpis AS
 SELECT
     COUNT(DISTINCT purchase_order_id)  AS total_orders,

@@ -1,3 +1,5 @@
+DROP MATERIALIZED VIEW IF EXISTS app_analytics.mv_contract_scoring CASCADE;
+
 CREATE MATERIALIZED VIEW app_analytics.mv_contract_scoring AS
 SELECT
     *,
