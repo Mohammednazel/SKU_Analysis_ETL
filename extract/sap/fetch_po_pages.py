@@ -1,118 +1,141 @@
 # extract/sap/fetch_po_pages.py
-import os
-import requests
-import json
-import logging
-import time
+
+import json, time, os, requests
+
+from extract.sap.token_manager import fetch_token
+
 from extract.sap.extract_config import (
-    SAP_PO_URL, TIMEOUT, RAW_DIR, PAGE_SIZE, MAX_PAGES
+
+    NADEC_PO_URL, SAP_CLIENT, PAGE_SIZE,
+
+    MAX_PAGES, TIMEOUT, RAW_DIR
+
 )
-from extract.sap.token_manager import get_sap_token
 
-logger = logging.getLogger(__name__)
 
-def fetch_po_data_range(start_date_str, end_date_str, batch_label="batch"):
-    """
-    Fetches PO data using the 'Old Code' strategy: 
-    GET request with JSON BODY including DATE FILTERS.
-    """
-    saved_files = []
-    token = get_sap_token()
-    
-    # Format dates to match SAP requirements (usually YYYY-MM-DD)
-    # Removing 'T00:00:00' if present, as SAP often prefers simple dates
-    sap_start_date = start_date_str.split("T")[0]
-    sap_end_date = end_date_str.split("T")[0]
 
-    logger.info(f"🔄 Fetching data from {sap_start_date} to {sap_end_date}...")
+def request_page(headers, body, skiptoken):
+    if skiptoken > 0:
+        body["skiptoken"] = str(skiptoken)
+
+    for attempt in range(5):  # INCREASED RETRIES FROM 3 TO 5
+        try:
+            resp = requests.get(
+                NADEC_PO_URL,
+                headers=headers,
+                json=body,
+                timeout=120  # <--- CHANGED: Increased from 30s (TIMEOUT) to 120s
+            )
+            if resp.status_code == 429:
+                print(f"[WARN] 429 Too Many Requests. Sleeping...")
+                time.sleep(10)
+                continue
+            resp.raise_for_status()
+            return resp.json()
+        except Exception as e:
+            print(f"[WARN] retry {attempt+1}/5 due to {e}")
+            time.sleep(5 + attempt * 2) # INCREASED SLEEP TIME
+
+    raise RuntimeError("Page fetch failed after retries")
+
+
+
+# extract/sap/fetch_po_pages.py
+
+# ... (Keep imports and request_page function exactly as they are) ...
+
+def fetch_and_save_pages(from_cdate, to_cdate, label="extract"):
+    token = fetch_token()
+    headers = {
+        "Authorization": f"Bearer {token}",
+        "Cookie": f"sap-usercontext=sap-client={SAP_CLIENT}",
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+    }
+    body = {"expand": "to_items", "from_cdate": from_cdate, "to_cdate": to_cdate}
 
     skiptoken = 0
-    
+    saved_files = []
+
     for page in range(1, MAX_PAGES + 1):
-        # 1. Construct the Payload (Restoring your ORIGINAL Logic)
-        payload = {
-            "expand": "to_items",
-            "from_cdate": sap_start_date,  # <--- RESTORED
-            "to_cdate": sap_end_date,      # <--- RESTORED
-            # Only add skiptoken if it's > 0 (Matching your old code logic)
-        }
-        if skiptoken > 0:
-            payload["skiptoken"] = str(skiptoken)
-
-        headers = {
-            "Authorization": f"Bearer {token}",
-            "Accept": "application/json",
-            "Content-Type": "application/json"
-        }
-
         try:
-            response = None
-            for attempt in range(3):
-                try:
-                    response = requests.get(
-                        SAP_PO_URL, 
-                        headers=headers, 
-                        json=payload, 
-                        timeout=TIMEOUT
-                    )
-                    
-                    if response.status_code == 401:
-                        logger.warning("🔄 Token expired. Refreshing...")
-                        token = get_sap_token(force_refresh=True)
-                        headers["Authorization"] = f"Bearer {token}"
-                        continue
-                    
-                    if response.status_code >= 500:
-                        logger.warning(f"⚠️ Server Error {response.status_code}. Retrying ({attempt+1}/3)...")
-                        time.sleep(5)
-                        continue
-                    
-                    response.raise_for_status()
-                    break 
-
-                except requests.exceptions.RequestException as e:
-                    logger.warning(f"⚠️ Network error: {e}. Retrying...")
-                    time.sleep(2)
+            # 🛡️ THE SAFETY NET: Try to get the page
+            data = request_page(headers, body, skiptoken)
             
-            if response is None or response.status_code != 200:
-                raise Exception(f"Failed to fetch page {page}.")
+        except RuntimeError as e:
+            # If SAP crashes, Log it, STOP extracting, but RETURN what we have
+            print(f"⚠️ [PARTIAL SUCCESS] SAP Failed at page {page}: {e}")
+            print(f"✅ Stopping this batch, but keeping {len(saved_files)} saved pages.")
+            break 
 
-            data = response.json()
-            
-            # 2. Extract Results
-            results = []
-            if "d" in data:
-                d_data = data["d"]
-                if isinstance(d_data, list):
-                    results = d_data
-                elif "results" in d_data:
-                    results = d_data["results"]
-            
-            # 3. Stop if empty
-            if not results:
-                logger.info(f"✅ No more data at page {page}. Stopping.")
-                break
+        rows = []
+        if "d" in data and "results" in data["d"]:
+            rows = data["d"]["results"]
+        elif "value" in data:
+            rows = data["value"]
 
-            # 4. Save Raw Data
-            # Note: We trust the Server-Side filter now, but we keep the file saving logic
-            if results:
-                filename = f"{batch_label}_page_{page}.json"
-                filepath = os.path.join(RAW_DIR, filename)
-                with open(filepath, "w", encoding="utf-8") as f:
-                    json.dump(results, f, ensure_ascii=False)
-                saved_files.append(filepath)
-                logger.info(f"💾 Saved {len(results)} rows to {filename}")
+        if not rows:
+            print(f"[STOP] no more rows at page {page}")
+            break
 
-            # 5. Advance Pagination
-            skiptoken += PAGE_SIZE
-            
-            # Safety break
-            if len(results) < 5: 
-                 logger.info("✅ Result count low, assuming end of data.")
-                 break
+        filename = f"{RAW_DIR}/{label}_page_{page}.json"
+        with open(filename, "w", encoding="utf-8") as f:
+            json.dump(rows, f, ensure_ascii=False)
 
-        except Exception as e:
-            logger.error(f"❌ Batch crashed at page {page}: {e}")
-            raise e
+        print(f"[SAVED] {filename} ({len(rows)} rows)")
+        saved_files.append(filename)
+
+        skiptoken += PAGE_SIZE
+        time.sleep(0.1)
+
+    return saved_files
+
+
+
+    for page in range(1, MAX_PAGES + 1):
+
+        data = request_page(headers, body, skiptoken)
+
+
+
+        rows = []
+
+        if "d" in data and "results" in data["d"]:
+
+            rows = data["d"]["results"]
+
+        elif "value" in data:
+
+            rows = data["value"]
+
+
+
+        if not rows:
+
+            print(f"[STOP] no more rows at page {page}")
+
+            break
+
+
+
+        filename = f"{RAW_DIR}/{label}_page_{page}.json"
+
+        with open(filename, "w", encoding="utf-8") as f:
+
+            json.dump(rows, f, ensure_ascii=False)
+
+
+
+        print(f"[SAVED] {filename} ({len(rows)} rows)")
+
+        saved_files.append(filename)
+
+
+
+        skiptoken += PAGE_SIZE
+
+        time.sleep(0.1)
+
+
 
     return saved_files
