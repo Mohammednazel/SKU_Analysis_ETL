@@ -30,7 +30,7 @@ NADEC_PO_URL  = SAP_PO_URL
 # --- 3. PAGING & LIMITS ---
 PAGE_SIZE = 100
 MAX_PAGES = 2000
-TIMEOUT   = 30
+TIMEOUT   = 120
 
 # --- 4. FILTERING ---
 # Updated threshold based on your file
