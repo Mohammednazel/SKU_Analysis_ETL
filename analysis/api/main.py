@@ -5,6 +5,12 @@ from fastapi.middleware.cors import CORSMiddleware
 # Import the router we created
 from analysis.api.routers import contracts
 from analysis.api.routers import sku
+from analysis.api.routers import kpis
+from analysis.api.routers import supplier
+
+
+
+
 # from analysis.api.routers import supplier  <-- KEEP COMMENTED UNTIL NEXT STEP
 
 app = FastAPI(
@@ -25,7 +31,8 @@ app.add_middleware(
 # Connect the routers to the app
 app.include_router(contracts.router)
 app.include_router(sku.router)
-# app.include_router(supplier.router)        <-- KEEP COMMENTED UNTIL NEXT STEP
+app.include_router(kpis.router)
+app.include_router(supplier.router)
 
 @app.get("/")
 def root():

@@ -228,3 +228,5 @@ def get_sku_weekly_frequency(
         ORDER BY order_week DESC
     """
     return db.execute(text(sql), {"sku_id": unified_sku_id, "year": year}).mappings().all()
+
+
