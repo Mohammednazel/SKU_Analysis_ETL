@@ -27,6 +27,13 @@ def get_contract_candidates(
     min_score: Optional[int] = Query(None, ge=0, le=100),
     db: Session = Depends(get_db)
 ):
+    """
+    Get top contract candidates ranked by priority score.
+    
+    Query Parameters:
+    - limit: Number of results (1-200, default 50)
+    - min_score: Filter by minimum contract score (0-100, optional)
+    """
     sql = """
         SELECT
             unified_sku_id,
@@ -42,10 +49,13 @@ def get_contract_candidates(
         LIMIT :limit
     """
 
-    return db.execute(
+    results = db.execute(
         text(sql),
         {"limit": limit, "min_score": min_score}
     ).mappings().all()
+    
+    # Convert to list of dicts for Pydantic validation
+    return [dict(row) for row in results] if results else []
 
 
 # ---------------------------------------------------------
@@ -60,6 +70,16 @@ def get_contract_candidate_detail(
     unified_sku_id: str,
     db: Session = Depends(get_db)
 ):
+    """
+    Get detailed contract scoring breakdown for a specific SKU.
+    
+    Path Parameters:
+    - unified_sku_id: The SKU identifier
+    
+    Returns:
+    - All scoring components (materiality, frequency, volatility, fragmentation)
+    - Recommendation explanation
+    """
     sql = """
         SELECT
             unified_sku_id,
@@ -85,6 +105,9 @@ def get_contract_candidate_detail(
     ).mappings().first()
 
     if not row:
-        raise HTTPException(status_code=404, detail="SKU not found")
+        raise HTTPException(
+            status_code=404, 
+            detail=f"SKU '{unified_sku_id}' not found in contract candidates"
+        )
 
-    return row
+    return dict(row)

@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import Optional
 from datetime import datetime
 
@@ -11,6 +11,14 @@ class ContractCandidateOut(BaseModel):
     supplier_count: int
     contract_priority_score: int
     contract_recommendation: str
+    
+    @field_validator('contract_priority_score', mode='before')
+    @classmethod
+    def convert_score_to_int(cls, v):
+        """Convert float to int for score"""
+        if v is None:
+            return 0
+        return int(float(v))
 
 
 class ContractCandidateDetailOut(ContractCandidateOut):
@@ -20,6 +28,14 @@ class ContractCandidateDetailOut(ContractCandidateOut):
     materiality_score: int
     volatility_score: int
     fragmentation_score: int
+    
+    @field_validator('frequency_score', 'materiality_score', 'volatility_score', 'fragmentation_score', mode='before')
+    @classmethod
+    def convert_scores_to_int(cls, v):
+        """Convert score fields to int"""
+        if v is None:
+            return 0
+        return int(float(v))
 
 
 class SKUProfileOut(BaseModel):
@@ -32,6 +48,7 @@ class SKUProfileOut(BaseModel):
     avg_unit_price: float
     price_stddev: Optional[float] = 0.0
 
+
 class GlobalKPIs(BaseModel):
     total_orders: int
     total_skus: int
@@ -40,11 +57,13 @@ class GlobalKPIs(BaseModel):
     first_order_date: Optional[datetime] = None
     last_order_date: Optional[datetime] = None
 
+
 class SupplierSummary(BaseModel):
     supplier_name: str
     total_spend: float
     order_count: int
     sku_count: int
+
 
 class SupplierTier(BaseModel):
     supplier_name: str
@@ -53,6 +72,7 @@ class SupplierTier(BaseModel):
     total_spend: float
     sku_count: int
     order_count: int
+
 
 class SupplierMonthlyMetric(BaseModel):
     supplier_name: str

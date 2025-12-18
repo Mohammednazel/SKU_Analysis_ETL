@@ -82,18 +82,28 @@ def fetch_sku_ranking(year: Optional[int] = None, month: Optional[int] = None, l
         st.error(f"Failed to fetch SKU ranking: {e}")
         return pd.DataFrame()
 
-def fetch_contract_candidates(min_score: Optional[int] = None, limit: int = 200):
-    """Fetch contract candidates - no cache due to parameters"""
+def fetch_contract_candidates(min_score: Optional[int] = None, limit: int = 50):
+    """Fetch contract candidates"""
     try:
+        limit = min(max(limit, 1), 200)
         params = {"limit": limit}
-        if min_score:
-            params["min_score"] = min_score
-        response = requests.get(f"{BASE_URL}/contracts/candidates", params=params)
+        
+        if min_score is not None and isinstance(min_score, int):
+            if 0 <= min_score <= 100:
+                params["min_score"] = min_score
+        
+        response = requests.get(
+            f"{BASE_URL}/contracts/candidates",
+            params=params,
+            timeout=10
+        )
+        
         response.raise_for_status()
         data = response.json()
-        return pd.DataFrame(data) if data else pd.DataFrame()
+        return pd.DataFrame(data) if isinstance(data, list) and data else pd.DataFrame()
+        
     except Exception as e:
-        st.error(f"Failed to fetch contract candidates: {e}")
+        st.error(f"Failed to fetch contract candidates: {str(e)}")
         return pd.DataFrame()
 
 @st.cache_data(ttl=3600)
@@ -360,7 +370,7 @@ def page_dashboard():
     st.markdown('<p class="section-header">🎯 Contract Opportunity Scorecard</p>', unsafe_allow_html=True)
     
     min_score = st.slider("Minimum Contract Score", 0, 100, 60, step=5, key="min_score")
-    contract_data = fetch_contract_candidates(min_score=min_score, limit=100)
+    contract_data = fetch_contract_candidates(min_score=min_score, limit=50)
     
     if not contract_data.empty:
         contract_display = contract_data.head(30).copy()
@@ -387,7 +397,8 @@ def page_sku_detail():
     """SKU detail page"""
     st.markdown('<p class="header-title">🔍 SKU Analysis & Breakdown</p>', unsafe_allow_html=True)
     
-    contract_data = fetch_contract_candidates(limit=500)
+    # Fetch with reasonable limit
+    contract_data = fetch_contract_candidates(limit=100)
     
     if contract_data.empty:
         st.error("No contract data available")
