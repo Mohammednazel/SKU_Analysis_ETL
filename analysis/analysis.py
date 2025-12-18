@@ -82,6 +82,17 @@ def fetch_sku_ranking(year: Optional[int] = None, month: Optional[int] = None, l
         st.error(f"Failed to fetch SKU ranking: {e}")
         return pd.DataFrame()
 
+@st.cache_data(ttl=3600)
+def fetch_sku_profile_multi_uom(sku_id: str):
+    """Fetch SKU profile with multi-UOM breakdown"""
+    try:
+        response = requests.get(f"{BASE_URL}/skus/{sku_id}/profile")
+        response.raise_for_status()
+        return response.json()
+    except Exception as e:
+        st.error(f"Failed to fetch SKU profile: {e}")
+        return None
+
 def fetch_contract_candidates(min_score: Optional[int] = None, limit: int = 50):
     """Fetch contract candidates"""
     try:
@@ -394,140 +405,152 @@ def page_dashboard():
 # ============================================================================
 
 def page_sku_detail():
-    """SKU detail page"""
-    st.markdown('<p class="header-title">🔍 SKU Analysis & Breakdown</p>', unsafe_allow_html=True)
-    
-    # Fetch with reasonable limit
-    contract_data = fetch_contract_candidates(limit=100)
-    
-    if contract_data.empty:
-        st.error("No contract data available")
-        return
-    
-    sku_labels = [f"{row['sku_name']} ({row['unified_sku_id']})" for _, row in contract_data.iterrows()]
-    
-    if not sku_labels:
-        st.error("No SKUs available")
-        return
-    
-    selected_idx = st.selectbox("Select SKU", range(len(sku_labels)), 
-                                format_func=lambda i: sku_labels[i], key="sku_select")
-    selected_sku_id = contract_data.iloc[selected_idx]["unified_sku_id"]
-    
-    detail = fetch_contract_detail(selected_sku_id)
-    
-    if not detail:
-        st.error("Failed to load SKU details")
-        return
+    """SKU Detail page with multi-UOM breakdown"""
+    st.markdown('<p class="header-title">📦 SKU Detail Analysis</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color: #666; font-size: 14px;">Deep dive into procurement patterns by Unit of Measure</p>', unsafe_allow_html=True)
     
     st.markdown("---")
     
-    # HEADER
-    col1, col2, col3 = st.columns([2, 1, 1])
-    with col1:
-        st.markdown(f"### {detail.get('sku_name', 'N/A')}")
-        st.caption(f"SKU ID: {detail.get('unified_sku_id', 'N/A')}")
-    with col2:
-        st.markdown(f"**Total Spend:** {format_currency(detail.get('total_spend', 0))}")
-    with col3:
-        recommendation = detail.get("contract_recommendation", "")
-        emoji = get_recommendation_emoji(recommendation)
-        st.markdown(f"### {emoji} {recommendation}")
+    # Fetch available SKUs
+    st.markdown('<p class="section-header">🔍 Select SKU</p>', unsafe_allow_html=True)
+    
+    sku_data = fetch_sku_ranking(limit=200)
+    
+    if sku_data.empty:
+        st.warning("⚠️ No SKU data available")
+        return
+    
+    # Create selection dropdown
+    sku_options = sku_data[["sku_name", "unified_sku_id"]].drop_duplicates()
+    sku_display_list = [f"{row['sku_name']} ({row['unified_sku_id']})" for _, row in sku_options.iterrows()]
+    
+    selected_sku_display = st.selectbox(
+        "Choose a SKU to analyze:",
+        options=sku_display_list,
+        key="sku_detail_select",
+        index=0
+    )
+    
+    # Extract the SKU ID from the selected option
+    selected_sku_name = selected_sku_display.split(" (")[0]
+    selected_sku_id = selected_sku_display.split("(")[1].rstrip(")")
     
     st.markdown("---")
     
-    # SCORES
-    st.markdown('<p class="section-header">📊 Score Breakdown</p>', unsafe_allow_html=True)
+    # Fetch SKU profile with multi-UOM breakdown
+    st.markdown('<p class="section-header">📊 Overview</p>', unsafe_allow_html=True)
     
-    col1, col2, col3, col4 = st.columns(4)
-    render_metric_card(col1, "Materiality", f"{detail.get('materiality_score', 0)}/100", "Top spend", "#d62728")
-    render_metric_card(col2, "Volatility", f"{detail.get('volatility_score', 0)}/100", "Price var", "#ff7f0e")
-    render_metric_card(col3, "Frequency", f"{detail.get('frequency_score', 0)}/100", "Cadence", "#1f77b4")
-    render_metric_card(col4, "Fragmentation", f"{detail.get('fragmentation_score', 0)}/100", "Suppliers", "#2ca02c")
+    # Display basic info
+    sku_info = sku_data[sku_data["unified_sku_id"] == selected_sku_id].iloc[0] if not sku_data[sku_data["unified_sku_id"] == selected_sku_id].empty else None
     
-    # Priority Score Gauge
-    fig = go.Figure(go.Indicator(
-        mode="gauge+number",
-        value=detail.get("contract_priority_score", 0),
-        title={"text": "Contract Priority Score"},
-        gauge={
-            "axis": {"range": [0, 100]},
-            "bar": {"color": get_recommendation_color(detail.get("contract_recommendation", ""))},
-            "steps": [
-                {"range": [0, 60], "color": "#e8f4f8"},
-                {"range": [60, 80], "color": "#b3e5fc"},
-                {"range": [80, 100], "color": "#01579b"}
+    if sku_info is not None:
+        col1, col2, col3, col4 = st.columns(4)
+        render_metric_card(col1, "Total Spend", format_currency(sku_info.get("total_spend", 0)))
+        render_metric_card(col2, "Total Quantity", format_number(sku_info.get("total_quantity", 0)))
+        render_metric_card(col3, "Order Count", format_number(sku_info.get("order_count", 0)))
+        render_metric_card(col4, "Avg Unit Price", format_currency(sku_info.get("total_spend", 0) / sku_info.get("total_quantity", 1)))
+    
+    st.markdown("---")
+    
+    # Fetch and display Unit of Measure breakdown
+    st.markdown('<p class="section-header">📦 Unit of Measure Breakdown</p>', unsafe_allow_html=True)
+    
+    sku_profile = fetch_sku_profile_multi_uom(selected_sku_id)
+    
+    if sku_profile and "uoms" in sku_profile:
+        uom_df = pd.DataFrame(sku_profile["uoms"])
+        
+        if not uom_df.empty:
+            uom_df_display = uom_df.copy()
+            uom_df_display["Total Spend"] = uom_df_display["total_spend"].apply(format_currency)
+            uom_df_display["Total Quantity"] = uom_df_display["total_quantity"].apply(format_number)
+            uom_df_display["Avg Unit Price"] = uom_df_display["avg_unit_price"].apply(format_currency)
+            uom_df_display["Price Std Dev"] = uom_df_display["price_stddev"].fillna(0).round(2)
+            
+            display_cols = [
+                "unit_of_measure",
+                "order_count",
+                "active_months",
+                "supplier_count",
+                "Total Quantity",
+                "Avg Unit Price",
+                "Price Std Dev",
+                "Total Spend"
             ]
-        }
-    ))
-    st.plotly_chart(fig, use_container_width=True, key="priority_gauge")
+            
+            st.dataframe(
+                uom_df_display[display_cols],
+                use_container_width=True,
+                hide_index=True
+            )
+            
+            st.caption("Each row represents procurement frequency and pricing within a specific Unit of Measure")
+        else:
+            st.info("ℹ️ No unit-of-measure data available for this SKU")
+    else:
+        st.warning("⚠️ Unable to fetch SKU profile data")
     
     st.markdown("---")
     
-    # FINANCIAL FACTS
-    st.markdown('<p class="section-header">💰 Financial Facts</p>', unsafe_allow_html=True)
+    # Price variance analysis
+    st.markdown('<p class="section-header">💰 Price Variance Analysis</p>', unsafe_allow_html=True)
     
-    col1, col2, col3, col4 = st.columns(4)
-    render_metric_card(col1, "Total Spend", format_currency(detail.get("total_spend", 0)))
-    render_metric_card(col2, "Avg Unit Price", format_currency(detail.get("avg_unit_price", 0)))
-    render_metric_card(col3, "Price Std Dev", f"${detail.get('price_stddev', 0):.2f}")
-    render_metric_card(col4, "Active Months", f"{detail.get('active_months', 0)} mo")
+    price_variance = fetch_sku_price_variance(selected_sku_id)
+    
+    if not price_variance.empty:
+        price_display = price_variance.copy()
+        price_display["Avg Unit Price"] = price_display["avg_unit_price"].apply(format_currency)
+        price_display["Min Price"] = price_display["min_unit_price"].apply(format_currency)
+        price_display["Max Price"] = price_display["max_unit_price"].apply(format_currency)
+        price_display["Price Std Dev"] = price_display["price_stddev"].fillna(0).round(2)
+        
+        display_cols = ["supplier_name", "Avg Unit Price", "Min Price", "Max Price", "Price Std Dev"]
+        
+        st.dataframe(
+            price_display[display_cols],
+            use_container_width=True,
+            hide_index=True
+        )
+        
+        st.caption("Identifies pricing instability across different suppliers")
+    else:
+        st.info("ℹ️ No price variance data available")
     
     st.markdown("---")
     
-    # TREND
-    st.markdown('<p class="section-header">📈 Purchase Trend</p>', unsafe_allow_html=True)
+    # Trend analysis
+    st.markdown('<p class="section-header">📈 Spending Trend</p>', unsafe_allow_html=True)
     
     col1, col2 = st.columns([3, 1])
     with col2:
-        grain = st.selectbox("Granularity", ["month", "week"], 
-                            format_func=lambda x: "Monthly" if x == "month" else "Weekly",
-                            key="trend_grain")
+        grain_select = st.selectbox("Time Grain", options=["month", "week"], key="trend_grain")
     
-    trend_data = fetch_sku_trend(selected_sku_id, grain=grain)
+    trend_data = fetch_sku_trend(selected_sku_id, grain=grain_select)
     
     if not trend_data.empty:
-        try:
-            trend_data["period"] = pd.to_datetime(trend_data["period"])
-            
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(
-                x=trend_data["period"],
-                y=trend_data["total_spend"],
-                mode="lines+markers",
-                name="Spend",
-                line=dict(color="#1f77b4", width=3),
-                fill="tozeroy"
-            ))
-            fig.update_layout(
-                title="Spending Trend",
-                xaxis_title="Period",
-                yaxis_title="Spend ($)",
-                height=400,
-                hovermode="x unified"
-            )
-            st.plotly_chart(fig, use_container_width=True, key="trend_chart")
-        except Exception as e:
-            st.error(f"Error rendering trend chart: {e}")
+        # Create trend chart
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=trend_data["period"],
+            y=trend_data["total_spend"],
+            mode="lines+markers",
+            name="Total Spend",
+            line=dict(color="#1f77b4", width=2),
+            marker=dict(size=6)
+        ))
+        
+        fig.update_layout(
+            title=f"SKU Spend Trend ({grain_select.capitalize()})",
+            xaxis_title="Period",
+            yaxis_title="Total Spend ($)",
+            hovermode="x unified",
+            template="plotly_white",
+            height=400
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, key="trend_chart")
     else:
-        st.info("No trend data available")
-    
-    st.markdown("---")
-    
-    # PRICE VARIANCE
-    st.markdown('<p class="section-header">💱 Supplier Price Variance</p>', unsafe_allow_html=True)
-    
-    price_var = fetch_sku_price_variance(selected_sku_id)
-    
-    if not price_var.empty:
-        if all(col in price_var.columns for col in ["supplier_name", "avg_unit_price", "min_unit_price", "max_unit_price", "price_stddev"]):
-            pv_display = price_var[["supplier_name", "avg_unit_price", "min_unit_price", "max_unit_price", "price_stddev"]].copy()
-            pv_display.columns = ["Supplier", "Avg Price", "Min Price", "Max Price", "Std Dev"]
-            st.dataframe(pv_display, use_container_width=True, hide_index=True)
-        else:
-            st.warning("Price variance data is incomplete")
-    else:
-        st.info("No price variance data available")
+        st.info("ℹ️ No trend data available")
 
 # ============================================================================
 # PAGE: SUPPLIER ANALYSIS

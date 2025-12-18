@@ -24,10 +24,11 @@ SELECT
 
     -- Clean Currency from Header
     h.currency,
-
+    
     i.order_date,
     DATE_TRUNC('month', i.order_date)::date AS order_month,
-    EXTRACT(YEAR FROM i.order_date)::int AS order_year
+    EXTRACT(YEAR FROM i.order_date)::int AS order_year,
+    h.status AS order_status
 
 FROM app_core.purchase_order_items i
 JOIN app_analytics.v_headers_enriched h

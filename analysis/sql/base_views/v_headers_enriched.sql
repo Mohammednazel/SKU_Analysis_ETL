@@ -12,7 +12,7 @@ SELECT
     COALESCE(UPPER(TRIM(status)), 'UNKNOWN') AS status,
 
     -- 4. Clean Currency Code (NEW - Critical for logic)
-    COALESCE(UPPER(TRIM(currency)), 'SAR') AS currency,
+    COALESCE(UPPER(TRIM(currency)), 'UNKNOWN') AS currency,
 
     -- 5. Null-Safe Amounts (NEW)
     COALESCE(grand_amount, 0) AS grand_amount,

@@ -1,6 +1,7 @@
 from pydantic import BaseModel, field_validator
-from typing import Optional
+from typing import Optional, List
 from datetime import datetime
+
 
 
 class ContractCandidateOut(BaseModel):
@@ -38,15 +39,24 @@ class ContractCandidateDetailOut(ContractCandidateOut):
         return int(float(v))
 
 
-class SKUProfileOut(BaseModel):
-    unified_sku_id: str
-    sku_name: str
-    total_spend: float
+
+
+
+class SKUFrequencyByUOM(BaseModel):
+    unit_of_measure: str
     order_count: int
     active_months: int
     supplier_count: int
+    total_quantity: float
+    total_spend: float
     avg_unit_price: float
-    price_stddev: Optional[float] = 0.0
+    price_stddev: Optional[float]
+
+
+class SKUProfileMultiUOMOut(BaseModel):
+    unified_sku_id: str
+    sku_name: str
+    uoms: List[SKUFrequencyByUOM]
 
 
 class GlobalKPIs(BaseModel):

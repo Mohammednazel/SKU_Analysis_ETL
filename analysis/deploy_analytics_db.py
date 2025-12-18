@@ -10,31 +10,32 @@ load_dotenv()
 # Define the exact order of execution (Dependency Chain)
 SQL_EXECUTION_ORDER = [
     # 1. Base Logic (Views)
-    "analysis/sql/base_views/v_headers_enriched.sql",
-    "analysis/sql/base_views/v_items_enriched.sql",
+    "sql/base_views/v_headers_enriched.sql",
+    "sql/base_views/v_items_enriched.sql",
 
     # 2. Aggregation Layers (Base MVs)
-    "analysis/sql/materialized_views/mv_global_kpis.sql",
-    "analysis/sql/materialized_views/mv_sku_monthly_metrics.sql",
-    "analysis/sql/materialized_views/mv_sku_weekly_metrics.sql",  
-    "analysis/sql/materialized_views/mv_supplier_monthly_metrics.sql",
-    "analysis/sql/materialized_views/mv_sku_price_variance.sql",
+    "sql/materialized_views/mv_global_kpis.sql",
+    "sql/materialized_views/mv_sku_monthly_metrics.sql",
+    "sql/materialized_views/mv_sku_weekly_metrics.sql",  
+    "sql/materialized_views/mv_supplier_monthly_metrics.sql",
+    "sql/materialized_views/mv_sku_price_variance.sql",
     
-    # 3. Intelligence Layers (Dependent MVs)
-    "analysis/sql/materialized_views/mv_supplier_base.sql",
-    "analysis/sql/materialized_views/mv_sku_contract_base.sql",
+    # 3. Intelligence Layers
+    "sql/materialized_views/mv_supplier_base.sql",
+    "sql/materialized_views/mv_sku_contract_base.sql",
     
-    # 4. Scoring Layers (Dependent on Intelligence)
-    "analysis/sql/materialized_views/mv_supplier_scoring.sql",
-    "analysis/sql/materialized_views/mv_contract_scoring.sql",
+    # 4. Scoring Layers
+    "sql/materialized_views/mv_supplier_scoring.sql",
+    "sql/materialized_views/mv_contract_scoring.sql",
     
-    # 5. Final Presentation Layers (Dashboard Ready)
-    "analysis/sql/materialized_views/mv_supplier_tiering.sql",
-    "analysis/sql/materialized_views/mv_contract_candidates.sql",
+    # 5. Final Presentation
+    "sql/materialized_views/mv_supplier_tiering.sql",
+    "sql/materialized_views/mv_contract_candidates.sql",
     
-    # 6. Performance Tuning
-    "analysis/sql/indexes.sql"
+    # 6. Performance
+    "sql/indexes.sql"
 ]
+
 
 def get_db_engine():
     user = quote_plus(os.getenv("DB_USER", "sku_admin"))

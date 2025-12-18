@@ -6,6 +6,8 @@ from pydantic import BaseModel
 from datetime import date
 
 from analysis.api.dependencies import get_db
+from analysis.api.schemas import SKUProfileMultiUOMOut
+
 
 router = APIRouter(
     prefix="/api/analytics/skus",
@@ -49,36 +51,57 @@ class SKUProfileOut(BaseModel):
 # ---------------------------------------------------------
 @router.get(
     "/{unified_sku_id}/profile",
-    response_model=SKUProfileOut,
-    summary="Get high-level stats for a single SKU"
+    response_model=SKUProfileMultiUOMOut,
+    summary="Get SKU frequency & pricing stats per unit of measure"
 )
 def get_sku_profile(
     unified_sku_id: str,
     db: Session = Depends(get_db)
 ):
     """
-    Returns summary stats (Total Spend, Volatility, etc.) for a SKU.
+    Returns SKU frequency, spend, and price behavior
+    broken down by Unit of Measure (Multi-UOM safe).
     """
+
     sql = """
-        SELECT 
+        SELECT
             unified_sku_id,
             sku_name,
-            total_spend,
+            unit_of_measure,
             order_count,
             active_months,
             supplier_count,
+            total_quantity,
+            total_spend,
             avg_unit_price,
-            COALESCE(price_stddev, 0) as price_stddev
+            COALESCE(price_stddev, 0) AS price_stddev
         FROM app_analytics.mv_sku_contract_base
         WHERE unified_sku_id = :sku_id
+        ORDER BY unit_of_measure
     """
-    row = db.execute(text(sql), {"sku_id": unified_sku_id}).mappings().first()
-    
-    if not row:
-        raise HTTPException(status_code=404, detail="SKU not found")
-        
-    return row
 
+    rows = db.execute(text(sql), {"sku_id": unified_sku_id}).mappings().all()
+
+    if not rows:
+        raise HTTPException(status_code=404, detail="SKU not found")
+
+    return {
+        "unified_sku_id": rows[0]["unified_sku_id"],
+        "sku_name": rows[0]["sku_name"],
+        "uoms": [
+            {
+                "unit_of_measure": r["unit_of_measure"],
+                "order_count": r["order_count"],
+                "active_months": r["active_months"],
+                "supplier_count": r["supplier_count"],
+                "total_quantity": r["total_quantity"],
+                "total_spend": r["total_spend"],
+                "avg_unit_price": r["avg_unit_price"],
+                "price_stddev": r["price_stddev"],
+            }
+            for r in rows
+        ]
+    }
 # ---------------------------------------------------------
 # 2️⃣ SKU SPEND RANKING
 # ---------------------------------------------------------
