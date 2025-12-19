@@ -28,7 +28,7 @@ def get_global_kpis(db: Session = Depends(get_db)):
             total_orders,
             total_skus,
             total_suppliers,
-            ,
+            total_spend,
             first_order_date,
             last_order_date
         FROM app_analytics.mv_global_kpis

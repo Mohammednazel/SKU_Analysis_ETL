@@ -17,7 +17,7 @@ router = APIRouter(
 # --- SCHEMAS (Defined inline for clarity, or import from schemas.py) ---
 class SKUTrendOut(BaseModel):
     period: date 
-    total_spend_sar: float
+    total_spend: float
     total_quantity: float
     order_count: int
     avg_unit_price: float
@@ -25,7 +25,7 @@ class SKUTrendOut(BaseModel):
 class SKUSpend(BaseModel):
     unified_sku_id: str
     sku_name: str
-    total_spend_sar: float
+    total_spend: float
     total_quantity: float
     order_count: int
 
@@ -39,11 +39,11 @@ class SKUPriceVarianceOut(BaseModel):
 class SKUProfileOut(BaseModel):
     unified_sku_id: str
     sku_name: str
-    total_spend_sar: float
+    total_spend: float
     order_count: int
     active_months: int
     supplier_count: int
-    avg_unit_price_sar: float
+    avg_unit_price: float
     price_stddev: Optional[float] = 0.0
 
 # ---------------------------------------------------------
@@ -72,8 +72,8 @@ def get_sku_profile(
             active_months,
             supplier_count,
             total_quantity,
-            total_spend_sar,
-            avg_unit_price_sar,
+            total_spend,
+            avg_unit_price,
             COALESCE(price_stddev, 0) AS price_stddev
         FROM app_analytics.mv_sku_contract_base
         WHERE unified_sku_id = :sku_id
@@ -95,7 +95,7 @@ def get_sku_profile(
                 "active_months": r["active_months"],
                 "supplier_count": r["supplier_count"],
                 "total_quantity": r["total_quantity"],
-                "total_spend_sar": r["total_spend_sar"],
+                "total_spend": r["total_spend"],
                 "avg_unit_price": r["avg_unit_price"],
                 "price_stddev": r["price_stddev"],
             }
@@ -178,7 +178,7 @@ def get_sku_trend(
         sql = """
             SELECT 
                 order_month as period,
-                total_spend_sar,
+                total_spend,
                 total_quantity,
                 order_count,
                 CASE WHEN total_quantity > 0 THEN total_spend / total_quantity ELSE 0 END as avg_unit_price
@@ -251,5 +251,4 @@ def get_sku_weekly_frequency(
         ORDER BY order_week DESC
     """
     return db.execute(text(sql), {"sku_id": unified_sku_id, "year": year}).mappings().all()
-
 

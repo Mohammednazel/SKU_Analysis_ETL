@@ -37,7 +37,7 @@ uom_df = pd.DataFrame(data["uoms"])
 # --------------------
 # 2️⃣ KPI Tiles
 # --------------------
-total_spend_sar_sar = uom_df["total_spend_sar"].sum()
+total_spend = uom_df["total_spend"].sum()
 total_orders = uom_df["order_count"].sum()
 supplier_count = uom_df["supplier_count"].max()
 active_months = uom_df["active_months"].max()
@@ -46,7 +46,7 @@ price_volatility = uom_df["price_stddev"].mean()
 
 col1, col2, col3, col4, col5, col6 = st.columns(6)
 
-col1.metric("💰 Total Spend", f"{total_spend_sar:,.0f}")
+col1.metric("💰 Total Spend", f"{total_spend:,.0f}")
 col2.metric("📦 Orders", total_orders)
 col3.metric("📆 Active Months", active_months)
 col4.metric("🏭 Suppliers", supplier_count)
@@ -65,7 +65,7 @@ st.dataframe(
         "active_months",
         "supplier_count",
         "total_quantity",
-        "total_spend_sar",
+        "total_spend",
         "avg_unit_price",
         "price_stddev"
     ]].sort_values("total_spend", ascending=False),

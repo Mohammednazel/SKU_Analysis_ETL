@@ -9,7 +9,6 @@ load_dotenv()
 
 # Define the exact order of execution (Dependency Chain)
 SQL_EXECUTION_ORDER = [
-    "sql/reference_data/fx_rates.sql",
     # 1. Base Logic (Views)
     "sql/base_views/v_headers_enriched.sql",
     "sql/base_views/v_items_enriched.sql",
