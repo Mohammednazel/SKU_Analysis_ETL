@@ -291,7 +291,7 @@ def page_dashboard():
     
     if kpis:
         col1, col2, col3, col4 = st.columns(4)
-        render_metric_card(col1, "Total Spend", format_currency(kpis.get("total_spend", 0)), "↓ 3.2% MoM", "#1f77b4")
+        render_metric_card(col1, "Total Spend", format_currency(kpis.get("total_spend_sar", 0)), "↓ 3.2% MoM", "#1f77b4")
         render_metric_card(col2, "Total SKUs", format_number(kpis.get("total_skus", 0)), "↑ 2.1% MoM", "#2ca02c")
         render_metric_card(col3, "Total Orders", format_number(kpis.get("total_orders", 0)), "↓ 1.5% MoM", "#ff7f0e")
         render_metric_card(col4, "Total Suppliers", format_number(kpis.get("total_suppliers", 0)), "↓ 0.8% MoM", "#d62728")
@@ -316,7 +316,7 @@ def page_dashboard():
         if not sku_data.empty:
             sku_display = sku_data.head(50).copy()
             sku_display["Rank"] = range(1, len(sku_display) + 1)
-            sku_display["Spend"] = sku_display["total_spend"].apply(format_currency)
+            sku_display["Spend"] = sku_display["total_spend_sar"].apply(format_currency)
             sku_display["Quantity"] = sku_display["total_quantity"].apply(lambda x: f"{format_number(x)} units")
             sku_display["Orders"] = sku_display["order_count"].astype(int)
             
@@ -343,7 +343,7 @@ def page_dashboard():
         with col1:
             st.subheader("Supplier Tier Distribution")
             tier_data = supplier_tiers.groupby("tier").agg({
-                "total_spend": "sum",
+                "total_spend_sar": "sum",
                 "supplier_name": "count"
             }).reset_index()
             tier_data.columns = ["Tier", "Total Spend", "Count"]
@@ -365,7 +365,7 @@ def page_dashboard():
                 ].head(10)
                 
                 if not high_risk.empty:
-                    risk_df = high_risk[["supplier_name", "total_spend", "tier", "dependency_ratio"]].copy()
+                    risk_df = high_risk[["supplier_name", "total_spend_sar", "tier", "dependency_ratio"]].copy()
                     risk_df.columns = ["Supplier", "Spend", "Tier", "Risk"]
                     st.dataframe(risk_df, use_container_width=True, hide_index=True)
                 else:
@@ -389,7 +389,7 @@ def page_dashboard():
         contract_display["Recommendation"] = contract_display["contract_recommendation"].apply(
             lambda x: f"{get_recommendation_emoji(x)} {x}"
         )
-        contract_display["Spend"] = contract_display["total_spend"].apply(format_currency)
+        contract_display["Spend"] = contract_display["total_spend_sar"].apply(format_currency)
         
         display_cols = ["Rank", "sku_name", "contract_priority_score", "Recommendation", "Spend", "active_months", "supplier_count"]
         display_data = contract_display[display_cols].copy()
@@ -445,10 +445,10 @@ def page_sku_detail():
     
     if sku_info is not None:
         col1, col2, col3, col4 = st.columns(4)
-        render_metric_card(col1, "Total Spend", format_currency(sku_info.get("total_spend", 0)))
+        render_metric_card(col1, "Total Spend", format_currency(sku_info.get("total_spend_sar", 0)))
         render_metric_card(col2, "Total Quantity", format_number(sku_info.get("total_quantity", 0)))
         render_metric_card(col3, "Order Count", format_number(sku_info.get("order_count", 0)))
-        render_metric_card(col4, "Avg Unit Price", format_currency(sku_info.get("total_spend", 0) / sku_info.get("total_quantity", 1)))
+        render_metric_card(col4, "Avg Unit Price", format_currency(sku_info.get("total_spend_sar", 0) / sku_info.get("total_quantity", 1)))
     
     st.markdown("---")
     
@@ -462,7 +462,7 @@ def page_sku_detail():
         
         if not uom_df.empty:
             uom_df_display = uom_df.copy()
-            uom_df_display["Total Spend"] = uom_df_display["total_spend"].apply(format_currency)
+            uom_df_display["Total Spend"] = uom_df_display["total_spend_sar"].apply(format_currency)
             uom_df_display["Total Quantity"] = uom_df_display["total_quantity"].apply(format_number)
             uom_df_display["Avg Unit Price"] = uom_df_display["avg_unit_price"].apply(format_currency)
             uom_df_display["Price Std Dev"] = uom_df_display["price_stddev"].fillna(0).round(2)
@@ -532,7 +532,7 @@ def page_sku_detail():
         fig = go.Figure()
         fig.add_trace(go.Scatter(
             x=trend_data["period"],
-            y=trend_data["total_spend"],
+            y=trend_data["total_spend_sar"],
             mode="lines+markers",
             name="Total Spend",
             line=dict(color="#1f77b4", width=2),
@@ -594,7 +594,7 @@ def page_supplier_analysis():
     
     if selected_tier is not None:
         col1, col2, col3, col4 = st.columns(4)
-        render_metric_card(col1, "Total Spend", format_currency(selected_tier.get("total_spend", 0)))
+        render_metric_card(col1, "Total Spend", format_currency(selected_tier.get("total_spend_sar", 0)))
         render_metric_card(col2, "Order Count", format_number(selected_tier.get("order_count", 0)))
         render_metric_card(col3, "SKU Count", format_number(selected_tier.get("sku_count", 0)))
         render_metric_card(col4, "Risk Level", str(selected_tier.get("dependency_ratio", "N/A")))

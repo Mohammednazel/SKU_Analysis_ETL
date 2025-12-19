@@ -73,3 +73,6 @@ Thumbs.db
 verify_data_in_Azure_db.py
 test_azure_tables.py
 flatten_po.py
+
+
+docs/

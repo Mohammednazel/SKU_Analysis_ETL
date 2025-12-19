@@ -8,7 +8,7 @@ SELECT
     LEAST(100, active_months * 10) AS frequency_score,
 
     /* Spend percentile */
-    NTILE(10) OVER (ORDER BY total_spend) * 10 AS materiality_score,
+    NTILE(10) OVER (ORDER BY total_spend_sar) * 10 AS materiality_score,
 
     /* Price volatility */
     COALESCE(

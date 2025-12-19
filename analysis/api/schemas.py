@@ -7,7 +7,7 @@ from datetime import datetime
 class ContractCandidateOut(BaseModel):
     unified_sku_id: str
     sku_name: str
-    total_spend: float
+    total_spend_sar : float
     active_months: int
     supplier_count: int
     contract_priority_score: int
@@ -48,7 +48,7 @@ class SKUFrequencyByUOM(BaseModel):
     active_months: int
     supplier_count: int
     total_quantity: float
-    total_spend: float
+    total_spend_sar: float
     avg_unit_price: float
     price_stddev: Optional[float]
 
@@ -63,14 +63,14 @@ class GlobalKPIs(BaseModel):
     total_orders: int
     total_skus: int
     total_suppliers: int
-    total_spend: float
+    total_spend_sar: float
     first_order_date: Optional[datetime] = None
     last_order_date: Optional[datetime] = None
 
 
 class SupplierSummary(BaseModel):
     supplier_name: str
-    total_spend: float
+    total_spend_sar: float
     order_count: int
     sku_count: int
 
@@ -79,7 +79,7 @@ class SupplierTier(BaseModel):
     supplier_name: str
     tier: str
     dependency_ratio: str
-    total_spend: float
+    total_spend_sar: float
     sku_count: int
     order_count: int
 

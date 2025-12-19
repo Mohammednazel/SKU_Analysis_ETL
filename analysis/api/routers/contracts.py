@@ -38,7 +38,7 @@ def get_contract_candidates(
         SELECT
             unified_sku_id,
             sku_name,
-            total_spend,
+            total_spend_sar,
             active_months,
             supplier_count,
             contract_priority_score,
@@ -84,7 +84,7 @@ def get_contract_candidate_detail(
         SELECT
             unified_sku_id,
             sku_name,
-            total_spend,
+            total_spend_sar,
             active_months,
             supplier_count,
             avg_unit_price,
